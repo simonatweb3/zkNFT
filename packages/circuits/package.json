@@ -1,0 +1,7 @@
+{
+  "name": "@pomp-eth/circuits",
+  "packageManager": "yarn@3.5.0",
+  "dependencies": {
+    "snarkjs": "0.7.0"
+  }
+}
