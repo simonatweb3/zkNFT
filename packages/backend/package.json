@@ -1,0 +1,4 @@
+{
+  "name": "@pomp-eth/backend",
+  "packageManager": "yarn@3.5.0"
+}
