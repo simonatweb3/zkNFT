@@ -1,4 +1,6 @@
 .yarn
+.pnp.cjs
+
 .yarn/*
 !.yarn/patches
 !.yarn/plugins

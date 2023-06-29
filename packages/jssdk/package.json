@@ -6,6 +6,7 @@
     "circomlibjs": "^0.1.7"
   },
   "scripts": {
+    "lint": "eslint .",
     "test": "ts-node --esm Sdk.ts"
   },
   "devDependencies": {
