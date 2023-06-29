@@ -5,6 +5,9 @@
   "dependencies": {
     "circomlibjs": "^0.1.7"
   },
+  "scripts": {
+    "test": "ts-node --esm Sdk.ts"
+  },
   "devDependencies": {
     "@types/node": "^20.3.2",
     "ts-node": "^10.9.1",
