@@ -1,6 +1,7 @@
 {
   "name": "@pomp-eth/jssdk",
   "packageManager": "yarn@3.5.0",
+  "type": "module",
   "dependencies": {
     "circomlibjs": "^0.1.7"
   }
