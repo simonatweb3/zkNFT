@@ -10,7 +10,9 @@ export class PompSdk {
 
 function test() {
   const sdk = new PompSdk();
-  console.log(sdk.getAccountKeySigningData());
+    console.log(sdk.getAccountKeySigningData());
 }
+
+//abc
 
 test();

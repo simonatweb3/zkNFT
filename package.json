@@ -10,6 +10,11 @@
     "format": "prettier --write .",
     "lint:ts": "eslint ."
   },
+  "husky": {
+    "hooks": {
+      "pre-commit": "yarn run format"
+    }
+  },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.50.0",
     "@typescript-eslint/parser": "^5.60.1",
@@ -18,6 +23,8 @@
     "eslint-plugin-import": "^2.25.2",
     "eslint-plugin-n": "^15.0.0",
     "eslint-plugin-promise": "^6.0.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.2.3",
     "prettier": "2.8.8",
     "typescript": "4.9.3"
   }
