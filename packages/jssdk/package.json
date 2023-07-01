@@ -10,7 +10,7 @@
   },
   "scripts": {
     "lint:ts": "eslint .",
-    "test": "ts-node --esm Sdk.ts"
+    "test": "ts-node Sdk.ts"
   },
   "devDependencies": {
     "@types/node": "^20.3.2",
