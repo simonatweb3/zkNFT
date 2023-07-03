@@ -1,4 +1,4 @@
-//import {ethers} from "ethers"
+import {ethers} from "ethers"
 
 const POMP_KEY_SIGN_MESSAGE =
   "Sign this message to generate your Pomp Privacy Key. This key lets the application decrypt your identity on Pomp.\n\nIMPORTANT: Only sign this message if you trust the application.";
@@ -14,7 +14,7 @@ async function test() {
   const sdk = new PompSdk();
     console.log(sdk.getAccountKeySigningData());
 
-
+    console.log('Balance:', ethers.utils.formatEther(650000000));
 	  //let signature = await userAdmin.signMessage(msg)
 	  //expect(ethers.utils.verifyMessage(msg, signature)).equal(userAdmin.address)
 }
