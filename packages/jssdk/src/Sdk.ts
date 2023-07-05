@@ -1,12 +1,12 @@
 import {ethers, Signer} from "ethers"
 
-const POMP_KEY_SIGN_MESSAGE =
+export const POMP_KEY_SIGN_MESSAGE =
   "Sign this message to generate your Pomp Privacy Key. This key lets the application decrypt your identity on Pomp.\n\nIMPORTANT: Only sign this message if you trust the application.";
 
 export class PompSdk {
   public async getAccountKeySigningData(signer : Signer) {
     console.log('Balance:', ethers.utils.formatEther(650000000));
-    //return Buffer.from(POMP_KEY_SIGN_MESSAGE);
+    //return signer.signMessage(Buffer.from(POMP_KEY_SIGN_MESSAGE))
     return signer.signMessage(POMP_KEY_SIGN_MESSAGE)
   }
 
