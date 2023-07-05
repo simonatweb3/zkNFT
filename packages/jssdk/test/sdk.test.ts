@@ -11,6 +11,9 @@ async function test() {
     let keys = await sdk.generateAccountPrivKeys(signer)
     console.log("keys : ", keys);
 
+    let id = await sdk.generateIdentity(JSON.stringify(keys))
+    console.log("id : ", id);
+
 	  //expect(ethers.utils.verifyMessage(POMP_KEY_SIGN_MESSAGE, signature)).equal(await signer.getAddress())
 }
 

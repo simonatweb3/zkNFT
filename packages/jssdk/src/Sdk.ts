@@ -12,10 +12,14 @@ export class PompSdk {
     return { trapdoor, nullifier };
   }
 
-  public async generateIdentity() {
-    const identity = new Identity("identity")
+  public async generateIdentity(keysJson : string) {
+    const identity = new Identity(keysJson)
     const identityCommitment = identity.getCommitment()
     return identityCommitment
   }
+
+  // format long identity to UI-friendly style xxxx...xxxx
+  // public async showIdentity(keysJson : string) {
+  // }
 
 }
