@@ -1,7 +1,14 @@
 {
   "name": "@pomp-eth/circuits",
   "packageManager": "yarn@3.5.0",
+  "scripts": {
+    "compile": "ts-node utils/build_circuits.ts"
+  },
   "dependencies": {
+    "circomlib": "^2.0.5",
+    "circomlibjs": "^0.1.7",
+    "ffjavascript": "^0.2.59",
+    "keccak": "^3.0.3",
     "snarkjs": "0.7.0"
   }
 }
