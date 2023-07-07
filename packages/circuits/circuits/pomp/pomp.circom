@@ -51,8 +51,8 @@ template Pomp(nLevels) {
     signal input treePathIndices[nLevels];
     signal input treeSiblings[nLevels];
 
-    signal input signalHash;
     signal input externalNullifier;
+    //signal input zksbt;
 
     signal output root;
     signal output nullifierHash;
@@ -83,4 +83,4 @@ template Pomp(nLevels) {
     nullifierHash <== calculateNullifierHash.out;
 }
 
-component main = Pomp(10);
+component main {public [externalNullifier]} = Pomp(10);

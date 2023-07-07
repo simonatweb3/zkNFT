@@ -2,9 +2,12 @@
   "name": "@pomp-eth/circuits",
   "packageManager": "yarn@3.5.0",
   "scripts": {
-    "compile": "ts-node utils/build_circuits.ts"
+    "compile": "ts-node utils/build_circuits.ts",
+    "test": "ts-node tests/pomp.test.ts"
   },
   "dependencies": {
+    "@semaphore-protocol/group": "^3.10.1",
+    "@semaphore-protocol/proof": "^3.10.1",
     "circomlib": "^2.0.5",
     "circomlibjs": "^0.1.7",
     "ffjavascript": "^0.2.59",
