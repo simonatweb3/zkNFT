@@ -296,34 +296,3 @@ isolate select zkAddress, or identity.
 |Relayer Support ||Qihuang|
 |POMP-ETH Design|pending|Yeye, Click|
 |release : doc/audit/trusted setup|pending|Sam, Senn|
-
-## Weekly Update
-
-6.26~6.30
-1. Design Drfat Review : @francisco @qihuang @victor @pico @Sam
-2. setup [pomp-eth](https://github.com/Manta-Network/pomp-eth) monorepo (cooperate with other dev)
-    * packages : circuit/contract/jssdk
-    * typescript config : browser-compatible from scratch
-    * coding style : eslint, prettier, solhint
-    * test framework
-<!--     * github workflow : CI -->
-
-7.3~7.7
-1. Design Tunning
-    * fine grained key derive
-2. identity key derive SDK (aztec-style)
-3. Sync Design/POMP details with Senn
-4. Circuit Building (on-going)
-    * circuit coding/building, verifier generate
-    * semaphore SDK tunning(pomp_identity/interface)
-    * unit test (on-going)
-
-7.10~7.14
-1. Contract/SDK Building
-    * depoly to [manta pacific](https://manta-testnet.caldera.dev/)
-
-7.17~7.21
-1. E2E Fullprocess Complete
-
-7.24~7.28
-1. Frontend Integrate
