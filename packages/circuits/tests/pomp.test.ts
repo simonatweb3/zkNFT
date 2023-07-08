@@ -4,6 +4,7 @@ import { Identity } from "@semaphore-protocol/identity"
 import {BigNumberish, Proof, SnarkJSProof } from "@semaphore-protocol/proof"
 // import packProof from "@semaphore-protocol/proof/src/packProof"
 // import unpackProof from "@semaphore-protocol/proof/src/unpackProof"
+import { poseidon2 } from "poseidon-lite/poseidon2"
 import { BytesLike, Hexable } from "@ethersproject/bytes"
 import { BigNumber } from "@ethersproject/bignumber"
 import { expect } from "chai";
@@ -67,27 +68,26 @@ function unpackProof(proof: Proof): SnarkJSProof {
 }
 
 export default async function generateProof(
-    trapdoor : bigint,
-    nullifier : bigint,
-    commitment : bigint,
+    identity : Identity,
     externalNullifier: BytesLike | Hexable | number | bigint,
-    //externalNullifier: bigint,
-    //sbt_id : bigint,
+    zksbt : bigint,
     group: Group,
     wasmFile : string,
     zkeyFile : string
 ): Promise<FullProof> {
     console.log(new Date().toUTCString() + " generateProof for wasm : ", wasmFile, ", zkey : ", zkeyFile)
 
-    const merkleProof: MerkleProof = group.generateMerkleProof(group.indexOf(commitment))
+    const pomp_commitment = poseidon2([identity.getCommitment(), zksbt])
+    const merkleProof: MerkleProof = group.generateMerkleProof(group.indexOf(pomp_commitment))
 
     const { proof, publicSignals } = await snarkjs.groth16.fullProve(
         {
-            identityTrapdoor: trapdoor,
-            identityNullifier: nullifier,
+            identityTrapdoor: identity.getTrapdoor(),
+            identityNullifier: identity.getNullifier(),
             treePathIndices: merkleProof.pathIndices,
             treeSiblings: merkleProof.siblings,
-            externalNullifier: hash(externalNullifier)
+            externalNullifier: hash(externalNullifier),
+            zksbt : zksbt
         },
         wasmFile,
         zkeyFile
@@ -99,7 +99,6 @@ export default async function generateProof(
             merkleRoot: publicSignals[0],
             nullifierHash: publicSignals[1],
             externalNullifier: BigNumber.from(externalNullifier).toString()
-            //externalNullifier: publicSignals[2]
         }
     }
 
@@ -112,18 +111,18 @@ async function test() {
     const identity = new Identity(
         "{ trapdoor : 1, nullifier : 2}"
     )
-    const identityCommitment = identity.getCommitment()
 
     // 2/3. add identity to group
-    const group = new Group(123, TREE_DEPTH, [identityCommitment])
+    const zksbt = BigInt(5678)
+    const pomp_commitment = poseidon2([identity.getCommitment(), zksbt])
+    const group = new Group(123, TREE_DEPTH, [pomp_commitment])
 
     // 3/3. generate witness, prove, verify
     const externalNullifier = "1234"
     const proof =  await generateProof(
-        identity.getTrapdoor(),
-        identity.getNullifier(),
-        identityCommitment,
+        identity,
         externalNullifier,
+        zksbt,
         group,
         get_circuit_wasm_file("pomp"),
         get_circuit_zkey_file("pomp").growth16
