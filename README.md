@@ -1,36 +1,40 @@
-# POMP : asset possession privacy prove with semaphore
 
-| version | description  | date       |
-| ------- | ------------ | ---------- |
-| 0.5     | design draft | 2023-06-21 |
-| 0.6     | review       | 2023-06-26 |
 
-$V0.6$ : @francisco @qihuang @victor
+|version|description|date|
+|---|---|---|
+|V1 Draft-1|design draft review |2023-06-26|
 
-- verify time can be decide by merkle tree root, thus no need in circuit!
-- proof key can be zkp with specific salt
-- public mint is acceptable.
-- consider zkAddress/ethereum identity compatible
 
-<!--
+$2023.06.26$ : @francisco @qihuang @victor
+* verify time can be decide by merkle tree root, thus no need in circuit!
+* proof key can be zkp with specific salt
+* public mint is acceptable.
+* consider zkAddress/ethereum identity compatible 
 
-Proof Key : web2 entrancy ?
+<!-- 
+
+Proof Key as web2 entrancy ?
 
 ## TODO
 
 1. repo:p0x(eth) vs manta
 3. Product : batch mint NFT! bind to identity.
     * POMP : not ERC721 ? how to render in collection, like opensea?
-4. Semaphore-Native ?
+4. Semaphore-Native ? 
 5. only membership? no signal user case.
-6. proof key？1-time zk proof ?
+6. proof key？1-time zk proof ? 
 
-8. why merkle tree ? if
+8. why merkle tree ? if 
 10. Backend : what can be done in Backend? what can not.
 
+ERC721 : sbt contract is the holder of NFTs
 
 
 -->
+
+Design Tunning ：
+* how to binding sbt to semaphore, to make a modular in a decouple way.
+
 
 ## Overview
 
@@ -42,21 +46,25 @@ Proof Key : web2 entrancy ?
 
 &emsp;&emsp;We will demostrate how to promote semaphore protocol to prove ownership of the position without reveal the identity, and also best practice for fee-less verification with an offchain verify server.
 
+
 ## Proof Key
 
 [zkAddress-based Proof Key](https://docs.manta.network/docs/concepts/proofkey) allows users to verify their identity on-chain by prove identity:
 
-- Show the zkSBT has been minted to their identity(zkAddress).
-- Show they have spending rights to that identity(zkAddress).
+* Show the zkSBT has been minted to their identity(zkAddress).
+* Show they have spending rights to that identity(zkAddress).
+
 
 The deisgn could be simpler in Semaphore version :
+* SBT is part of seed for generate identity
+* account-specific secret is another part for generate identity.
 
-- SBT is part of seed for generate identity
-- account-specific secret is another part for generate identity.
+Verify Twice ?
+
 
 ## Semaphore
 
-&emsp;&emsp;[Semaphore Protocol](<(https://semaphore.appliedzkp.org/)>) allows to prove group membership in merkle tree without revealing identity.
+&emsp;&emsp;[Semaphore Protocol]((https://semaphore.appliedzkp.org/)) allows to prove group membership in merkle tree without revealing identity.
 
 &emsp;&emsp;We have previously undertaken development based on the Semaphore protocol and attempted to optimize it.
 
@@ -64,17 +72,19 @@ The deisgn could be simpler in Semaphore version :
 
 &emsp;&emsp;[merkle forest](https://github.com/samzkback/merkle-forest) is designed to archive elastic group, which has been involved to [semaphore V4 roadmap](https://github.com/orgs/semaphore-protocol/projects/10/views/3?pane=issue&itemId=15084394).
 
+
 ## Binding POMP sbt/timestamp in Semaphore
 
 An unique Position, who also bind to a certain sbt, is defined by several parameters:
+* asset type : eth/bnb..
+* asset range : 100~1000, >10000, 1% whale?
+* position timestamp : "Jun-21-2023 03:58:11", "block 17525512"
 
-- asset type : eth/bnb..
-- asset range : 100~1000, >10000, 1% whale?
-- position timestamp : "Jun-21-2023 03:58:11", "block 17525512"
 
 It would be more efficient and flexalbe to make the merkle tree per asset type/range, while postion timestamp and sbt id shoule be bind to semaphore identity.
 
 Thus, we will make minor changes on semaphore protocol, the change is aim to resue semaphore libaries as much as possible.
+
 
 ```mermaid
 
@@ -89,7 +99,7 @@ flowchart LR
 
 s(PRIV - Siblings) & pi(PRIV - Path Indices) --> M1((MT Verifier)) --> mr(PUB - MT Root of asset/range)
   it(PRIV - Identity Trapdoor) & in(PRIV - Identity Nullifier) --> H2((Poseidon Hash)) --> |Secret| H3((Poseidon Hash)) --> |Identity Commitment| H6((Poseidon Hash)) --> |Per SBT Identity| mr
-
+ 
  %%at(PUB asset_type) & ar(PUB - asset_range) &
  %%vt(PUB - verify_time) &
 sbt(PRIV - zkSBT_id) --> H6
@@ -100,14 +110,32 @@ in(PRIV - Identity Nullifier) & en(PUB - External Nullifier) --> H4((Poseidon Ha
 %%sig(PUB - Signal Hash) --> S1((Square))
 ```
 
+Minor changes to Semaphore : 
+* PompIdentity derive from Idenity
+    ```typescript
+    export class PompIdentity {
+      private semaphore_identity : Identity
+      private sbt_id : number
+      private _commitment: bigint
+
+      constructor(keysJson : string, sbtId : number) {
+        this.semaphore_identity = new Identity(keysJson)
+        this.sbt_id = sbtId
+        this._commitment = poseidon2([this.semaphore_identity.getCommitment(), this.sbt_id])
+      }
+    }
+    ```
+* nothing changes to Group
+* minor changes to Proof
+
+
 ## Workflow
 
 There are several stages :
-
-- identity derive
-- mint
-- on-chain verify
-- off-chain verify
+* identity derive
+* mint
+* on-chain verify
+* off-chain verify
 
 ```mermaid
 sequenceDiagram
@@ -115,25 +143,25 @@ sequenceDiagram
     participant B 	as Backend
     participant C 	as Contract/Blockchain
     participant R 	as Relayer
-
+    
     F -->> F  : connect_wallet
     F -->> F  : (trapdoor, nullifier) = sign("generate pomp secret")
     F -->> F  : id = poseidon(poseidon(trapdoor, nullifier))
-
+    
     rect rgba(0, 220, 220, .3)
-    %%F -->> B : mint("ETH", ">100") request
+    %%F -->> B : mint("ETH", ">100") request 
     %% B -->> F : "salt" to prevent atack reply
     %%F -->> B : sign_mint = sign("mint pomp ETH>100 under $salt")
     F -->> B : sign_mint = sign("mint pomp ETH>100")
     B -->> B : check sign_mint valid
     B -->> C : verify_time = query(balance > 100 ? true)
     %% B -->> F : eligble(query_time)
-
+    
     B -->> B : allocate SBT id
     B -->> B : id_per_sbt = poseidon(id, SBT_id, verify_time)
     B -->> C : add id_per_sbt to "merkle tree(asset, range)"
     end
-
+    
     %% on-chain verify
     rect rgba(220, 110, 220, .3)
         F -->> R : zkp = prove(path, time, sbt_id, id, root, external_nullifier)
@@ -152,17 +180,22 @@ sequenceDiagram
 
 ## identity derive
 
-Follow Aztec's, so that we don't need key management mechinism (like snap)
 
-- $(trapdoor, nullifier) = hash(eth\_addr.sign('generate pomp secret'))$
+Per [Semaphore secret recover tips](https://semaphore.appliedzkp.org/docs/guides/identities), Follow [Aztec Style Address](https://github.com/AztecProtocol/aztec-connect/blob/c39b4752aa260d3a857e15f9df8da1b3a384ccdb/yarn-project/sdk/src/aztec_sdk/aztec_sdk.ts#L198-L226), so that no extra mnemonics for users, thus don't need key management mechinism (like snap)
+
+* $(trapdoor, nullifier) = eth\_addr.signMessae('Sign\ xxx\ to generate\ xxx')$
+
 
 derive identity as semaphore:
 
-- $id = poseidon(trapdoor, nullifier)$
+* $id = poseidon(trapdoor, nullifier)$
 
 derive per sbt identity:
+* $sbt\_it = poseidon(id, sbt\_id, query\_time)$
 
-- $sbt\_it = poseidon(id, sbt\_id, query\_time)$
+
+Note, the dApp does not store the derived secret key.
+
 
 <!-- How to prevent Phishing？(not our duty?) -->
 
@@ -173,10 +206,11 @@ derive per sbt identity:
 3. server add membership to merkle tree, so there is no on-chain collision.
 <!-- 4. on-chain verify "user indeed want a zkSBT" by check "identity generate"? -->
 
+
 ## private Verify
 
-- on-chain verifier contract.
 
+* on-chain verifier contract.
 ```solidity
     enum ASSET {
         ETH,
@@ -194,23 +228,27 @@ derive per sbt identity:
     mapping(uint256 => uint256) salts;
 
     function verifyProof(
-        uint256 asset,
-        uint256 range,
-        uint256 time,
-        uint256 sbt_id,
+        uint merkleTreeRoot;
+        uint nullifierHash;
+        uint externalNullifier;
         uint256[8] calldata proof
     ) returns (bool)
-
+    
 ```
 
-- off-chain verify.
-
+* off-chain verify.
 ```typescript
-interface IPomp {
-  getSalt: (id: number, asset: number, range: number) => Promise<number>;
-  verifyProof: (id: number, asset: number, range: number) => Promise<number>;
-}
+    interface IPomp {
+        getSalt : (id : number, asset : number, range : number) => Promise<number>
+        verifyProof : (
+            merkleTreeRoot: BigNumberish,
+            nullifierHash: BigNumberish,
+            externalNullifier: BigNumberish,
+            proof: Proof
+        ) => Promise<number>
+    }
 ```
+
 
 ## Merkle Forest
 
@@ -222,29 +260,70 @@ interface IPomp {
 
 isolate select zkAddress, or identity.
 
-## Demo V1 Schedule
+## V1(internal) Schedule
+
+[pomp-eth monorepo](https://github.com/Manta-Network/pomp-eth)
 
 1. Design Review
-   - v0.5 : 2021-06-26?
+    * v0.5 : 2021-06-26?
 2. Circuit
-   - changes to semaphore
+    * changes to semaphore
 3. Contract
-   - Multi Group
-   - EAG Group
+    * Multi/EAG Group
+    * SBT
 4. SDK
-   - identity generate
-   - semaphore wrapper
-   - browser-compatible
+    * identity generate
+    * semaphore wrapper
+    * browser-compatible
 5. Frontend(Partial Re-using polkadot?)
-   - integrate SDK
+    * integrate SDK
 6. Backend(Partial Re-using polkadot?)
-   - mint zkSBT.
+    * mint zkSBT.
 7. Relayer(Partial Re-using polkadot)
 8. New Design ? Frontend
 
-| Task  | Schedule   | People              |
-| ----- | ---------- | ------------------- |
-| 1~4   | 3~4 weeks  | Sam                 |
-| 5~7   | 3 weeks    | Qihuang, Click, Sam |
-| 8     | ?          | Yeye, Click         |
-| other | NPO items? |                     |
+
+|Task Items|Schedule|People|
+|---|---|---|
+|Design V1 ||Sam|
+|Design Tunning||Sam, Senn|
+|monorepo||Sam|
+|circuit||Sam|
+|contract||zk(Sam), NFT(Senn)|
+|SDK||zk(Sam), NFT(Senn)|
+|Frotend Integrate||Click, Sam|
+|Backend Support||Qihuang|
+|Relayer Support ||Qihuang|
+|POMP-ETH Design|pending|Yeye, Click|
+|release : doc/audit/trusted setup|pending|Sam, Senn|
+
+## Weekly Update
+
+6.26~6.30
+1. Design Drfat Review : @francisco @qihuang @victor @pico @Sam
+2. setup [pomp-eth](https://github.com/Manta-Network/pomp-eth) monorepo (cooperate with other dev)
+    * packages : circuit/contract/jssdk
+    * typescript config : browser-compatible from scratch
+    * coding style : eslint, prettier, solhint
+    * test framework
+<!--     * github workflow : CI -->
+
+7.3~7.7
+1. Design Tunning
+    * fine grained key derive
+2. identity key derive SDK (aztec-style)
+3. Sync Design/POMP details with Senn
+4. Circuit Building (on-going)
+    * circuit coding/building, verifier generate
+    * semaphore SDK tunning(pomp_identity/interface)
+    * unit test (on-going)
+
+7.10~7.14
+1. Contract/SDK Building
+    * depoly to [manta pacific](https://manta-testnet.caldera.dev/)
+
+7.17~7.21
+1. E2E Fullprocess Complete
+
+7.24~7.28
+1. Frontend Integrate
