@@ -5,7 +5,7 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./Events.sol";
+import "./events.sol";
 
 contract ZkSBT is ERC721URIStorage, Ownable, Events {
     using Counters for Counters.Counter;
@@ -71,7 +71,7 @@ contract ZkSBT is ERC721URIStorage, Ownable, Events {
         uint256 sbtId, //sbt id in the per sbt identity
         RANGE range
     ) public onlyOperator {
-        require(identityCommitment != address(0), "invalid identityCommitment");
+        require(identityCommitment != 0, "invalid identityCommitment");
         require(mintIdStatus[mintId], "mintId not available");
 
         uint256 tokenId = sbtId;
