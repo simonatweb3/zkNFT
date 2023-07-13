@@ -17,9 +17,6 @@ contract ZkSBT is ERC721URIStorage, Ownable, Events {
     // operators allowed to mint SBT
     mapping(address => bool) public operators;
 
-    // stores allowed assetId:  [start id , end id]
-    mapping(address => uint256[2]) public allowedAssetIds;
-
     // sbt tokenId => sbt's metaData
     mapping(uint256 => MetaData) public sbtMetaData;
 
@@ -77,17 +74,7 @@ contract ZkSBT is ERC721URIStorage, Ownable, Events {
         require(identityCommitment != address(0), "invalid identityCommitment");
         require(mintIdStatus[mintId], "mintId not available");
 
-        (uint256 _startId, uint256 _endId) = allowedAssetIds[
-            identityCommitment
-        ];
-
-        require(
-            _startId != 0 && _endId != 0 && _startId < _endId,
-            "assetId not reserved"
-        );
-
-        uint256 tokenId = _startId;
-        require(sbtId == tokenId, "Invalid sbtId");
+        uint256 tokenId = sbtId;
         _safeMint(identityCommitment, tokenId);
 
         sbtMetaData[tokenId] = MetaData(
@@ -123,26 +110,5 @@ contract ZkSBT is ERC721URIStorage, Ownable, Events {
     ) internal virtual onlyOperator {
         mintIdStatus[_mintId] = _open;
         emit MintIdStatusChange(_mintId, _open);
-    }
-
-    /**
-     * @dev reserve SBT ids for user
-     *
-     * Emits an {ReserveSBT} event.
-     */
-    function reserve_sbt(address _to) internal virtual onlyOperator {
-        require(mintsPerReserve > 0, "invalid mintsPerReserve");
-
-        uint256 _startId = _tokenIds.current();
-
-        for (uint256 i = 0; i < mintsPerReserve; i++) {
-            _tokenIds.increment();
-        }
-
-        uint256 _endId = _startId + mintsPerReserve;
-
-        allowedAssetIds[_to] = [_startId, _endId];
-
-        emit ReserveSBT(_to, _startId, _endId);
     }
 }
