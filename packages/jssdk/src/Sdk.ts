@@ -49,7 +49,7 @@ export class PompSdk {
     return { trapdoor, nullifier };
   }
 
-  public async generateIdentity(keysJson : string) {
+  public generateIdentity(keysJson : string) : bigint {
     const identity = new Identity(keysJson)
     const identityCommitment = identity.getCommitment()
     return identityCommitment
