@@ -6,7 +6,7 @@
     "lint:check": "solhint --config ./.solhint.json  \"contracts/**/*.sol\"",
     "lint:fix": "solhint --config ./.solhint.json  \"contracts/**/*.sol\" --fix",
     "build": "yarn lint:check && hardhat compile",
-    "test": "yarn compile && hardhat test"
+    "test": "yarn build && hardhat test"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.9.2",
