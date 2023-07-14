@@ -5,9 +5,8 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./events.sol";
 
-contract ZkSBT is ERC721URIStorage, Ownable, Events {
+contract ZkSBT is ERC721URIStorage, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
 
@@ -26,11 +25,32 @@ contract ZkSBT is ERC721URIStorage, Ownable, Events {
     // mintId => baseUrl
     mapping(uint256 => string) public sbtBatchBaseUrl;
 
+    // zkAddress => identityCommitment, to check potential collision
+    mapping(address => uint256) public zkAddressPreImage;
+
     // address of pomp, stores corresponding Merkle tree;
     address public pomp;
 
+    string public baseUri;
+
+    event OperatorChange(address indexed _operator, bool indexed _allowed);
+
+    event MintIdStatusChange(uint256 indexed _mintId, bool indexed _open);
+
+    event MintZkSBT(
+        uint256 indexed _identityCommitment,
+        uint256 indexed _mintId,
+        uint256 indexed _chainId,
+        address _assetContractAddress,
+        uint256 _assetTokenId,
+        RANGE range
+    );
+
     modifier onlyOperator() {
-        require(operators[msg.sender] || msg.sender == owner());
+        require(
+            operators[msg.sender] || msg.sender == owner(),
+            "caller is not operator"
+        );
         _;
     }
 
@@ -62,7 +82,7 @@ contract ZkSBT is ERC721URIStorage, Ownable, Events {
         _safeMint(to, tokenId);
     }
 
-    function mintWithReservedId(
+    function mintWithSbtId(
         uint256 identityCommitment, //record identity commitment of user
         uint256 mintId, //mint id
         uint256 chainId, // chainId of the asset
@@ -71,11 +91,29 @@ contract ZkSBT is ERC721URIStorage, Ownable, Events {
         uint256 sbtId, //sbt id in the per sbt identity
         RANGE range
     ) public onlyOperator {
+        // check identityCommitment is not 0
         require(identityCommitment != 0, "invalid identityCommitment");
+
+        // check mintId is open
         require(mintIdStatus[mintId], "mintId not available");
 
+        // check mintId is open
+        require(
+            assetContractAddress != address(0),
+            "invalid asset contract address "
+        );
+
+        // the tokenId to be minted i sbtId
         uint256 tokenId = sbtId;
-        _safeMint(identityCommitment, tokenId);
+
+        // generate zk address from identityCommitment
+        address zkAddress = address(uint160(identityCommitment));
+
+        // check availability of zkAddress
+        checkZkAddressAvailabilty(zkAddress, identityCommitment);
+
+        // mint sbt
+        _safeMint(zkAddress, tokenId);
 
         sbtMetaData[tokenId] = MetaData(
             mintId,
@@ -84,6 +122,30 @@ contract ZkSBT is ERC721URIStorage, Ownable, Events {
             assetTokenId,
             range
         );
+
+        emit MintZkSBT(
+            identityCommitment,
+            mintId,
+            chainId,
+            assetContractAddress,
+            tokenId,
+            range
+        );
+    }
+
+    // check whether zkAddresses have collision
+    function checkZkAddressAvailabilty(
+        address zkAddress,
+        uint256 identityCommitment
+    ) internal returns (bool) {
+        uint256 preimage = zkAddressPreImage[zkAddress];
+        if (preimage == 0) {
+            zkAddressPreImage[zkAddress] = identityCommitment;
+        } else {
+            require(identityCommitment == preimage, "collision of zkAddress");
+        }
+
+        return true;
     }
 
     /**
@@ -94,7 +156,7 @@ contract ZkSBT is ERC721URIStorage, Ownable, Events {
     function setOperator(
         address operator,
         bool approved
-    ) internal virtual onlyOwner {
+    ) public virtual onlyOwner {
         operators[operator] = approved;
         emit OperatorChange(operator, approved);
     }
@@ -104,11 +166,28 @@ contract ZkSBT is ERC721URIStorage, Ownable, Events {
      *
      * Emits an {ApprovalForAll} event.
      */
-    function setOperator(
+    function setMintIdStatus(
         uint256 _mintId,
         bool _open
-    ) internal virtual onlyOperator {
+    ) public virtual onlyOperator {
         mintIdStatus[_mintId] = _open;
         emit MintIdStatusChange(_mintId, _open);
+    }
+
+    /**
+     * @dev Base URI for computing {tokenURI}.
+     */
+    function _baseURI() internal view override returns (string memory) {
+        return baseUri;
+    }
+
+    /**
+     * @dev set base Uri
+     */
+    function setBaseUri(
+        string memory _baseUri
+    ) internal onlyOperator returns (bool) {
+        baseUri = _baseUri;
+        return true;
     }
 }
