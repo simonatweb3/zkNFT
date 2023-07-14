@@ -11,7 +11,7 @@ on:
       - "packages/contracts/test/**"
 
 jobs:
-  contract-ci:
+  ci-contract:
     runs-on: ubuntu-latest
 
     strategy:
@@ -31,8 +31,9 @@ jobs:
 
       - name: Install Yarn v3.5.0·
         run: |
-          npm install -g yarn@3.5.0
+          npm i -g corepack && corepack prepare yarn@stable --activate && yarn plugin import workspace-tools
           export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
+          yarn set version 3.5.0
 
       - name: Verify Yarn version
         run: yarn --version
