@@ -81,10 +81,11 @@ contract ZkSBT is ERC721URIStorage, Ownable, Events {
             identityCommitment
         ];
 
-        require(
-            _startId != 0 && _endId != 0 && _startId < _endId,
-            "assetId not reserved"
-        );
+        require(_endId != 0 && _startId < _endId, "assetId not reserved");
+
+        if (_startId == _endId - 1) {
+            delete allowedAssetIds[identityCommitment];
+        }
 
         uint256 tokenId = _startId;
         require(sbtId == tokenId, "Invalid sbtId");
