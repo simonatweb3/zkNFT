@@ -3,7 +3,7 @@
   "packageManager": "yarn@3.5.0",
   "version": "0.0.1",
   "scripts": {
-    "compile": "ts-node utils/build_circuits.ts",
+    "build": "ts-node utils/build_circuits.ts",
     "test": "ts-node tests/pomp.test.ts"
   },
   "dependencies": {
