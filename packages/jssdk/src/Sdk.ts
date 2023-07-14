@@ -52,7 +52,7 @@ export class PompSdk {
   public generateIdentity(keysJson : string) : bigint {
     const identity = new Identity(keysJson)
     const identityCommitment = identity.getCommitment()
-    return identityCommitment
+    return identityCommitment;
   }
 
   // format long identity to UI-friendly style xxxx...xxxx

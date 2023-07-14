@@ -77,7 +77,7 @@ template Pomp(nLevels) {
     calculateNullifierHash.identityNullifier <== identityNullifier;
 
     component inclusionProof = MerkleTreeInclusionProof(nLevels);
-    inclusionProof.leaf <== poseidon.out; // using pomp zksbt-bind identity
+    inclusionProof.leaf <== poseidon.out; // using pomp zksbt-bind identity.
 
     for (var i = 0; i < nLevels; i++) {
         inclusionProof.siblings[i] <== treeSiblings[i];
