@@ -40,8 +40,8 @@ jobs:
       - name: Install dependencies
         run: yarn
 
-      # - name: Compile all packages
-      #   run: cd packages/circuits; yarn compile;
+      - name: Compile jssdk packages
+        run: cd packages/jssdk; yarn build; cd -;
 
       - name: Run all unit tests
-        run: cd packages/browser && yarn e2e:headless
+        run: cd packages/browser && yarn test

@@ -1298,6 +1298,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@pomp-eth/browser@workspace:packages/browser"
   dependencies:
+    "@pomp-eth/jssdk": 0.0.1
     "@types/node": 20.4.1
     "@types/react": 18.2.14
     "@types/react-dom": 18.2.6
@@ -1359,7 +1360,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@pomp-eth/jssdk@workspace:packages/jssdk":
+"@pomp-eth/jssdk@0.0.1, @pomp-eth/jssdk@workspace:packages/jssdk":
   version: 0.0.0-use.local
   resolution: "@pomp-eth/jssdk@workspace:packages/jssdk"
   dependencies:
