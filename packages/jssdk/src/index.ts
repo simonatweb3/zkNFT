@@ -1,1 +1,1 @@
-export * from "./jssdk";
+export * from "./sdk";
