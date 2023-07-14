@@ -11,7 +11,7 @@
   "dependencies": {
     "@openzeppelin/contracts": "^4.9.2",
     "circomlibjs": "^0.1.7",
-    "ethers": "^5.7.2"
+    "ethers": "^6.6.2"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
