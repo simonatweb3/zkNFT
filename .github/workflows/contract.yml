@@ -11,7 +11,7 @@ on:
       - "packages/contracts/test/**"
 
 jobs:
-  build-circuit:
+  contract-ci:
     runs-on: ubuntu-latest
 
     strategy:
@@ -29,9 +29,9 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Install Yarn v3.5.0
+      - name: Install Yarn v3.5.0·
         run: |
-          curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 3.5.0
+          npm install -g yarn@3.5.0
           export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
 
       - name: Verify Yarn version

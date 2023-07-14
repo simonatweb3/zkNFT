@@ -11,7 +11,7 @@ on:
       - "packages/browser/src/**"
 
 jobs:
-  build-circuit:
+  circuit-ci:
     runs-on: ubuntu-latest
 
     strategy:
