@@ -8,10 +8,11 @@ contract Pomp is SemaphoreGroups, Ownable {
   enum ASSET {
     ETH,
     BNB
+    // upgradeable
   }
 
   enum RANGE {
-      RANGE_0,       // >0
+      RANGE_0,       // >0, ignore?
       RANGE_1_10,    // 1~10
       RANGE_10_100,  // 10~100
       RANGE_100      // >100
