@@ -29,13 +29,14 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Install Yarn v3.5.0·
+      - name: Install Yarn
         run: |
           npm i -g corepack && corepack prepare yarn@stable --activate && yarn plugin import workspace-tools
-          yarn set version 3.5.0
 
-      - name: Verify Yarn version
-        run: yarn --version
+      - name: Set Yarn version 3.5.0
+        run: |
+          yarn set version 3.5.0
+          yarn --version
 
       - name: Install dependencies
         run: yarn
