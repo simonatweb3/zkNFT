@@ -15,6 +15,7 @@
   },
   "scripts": {
     "lint:ts": "eslint .",
+    "lint": "yarn lint:ts",
     "build": "rm -rf dist; tsc",
     "prepublish": "yarn build",
     "test": "ts-node test/sdk.test.ts"
@@ -23,6 +24,7 @@
     "@types/chai": "^4.3.5",
     "@types/node": "^20.3.2",
     "chai": "^4.3.7",
+    "eslint": "^8.45.0",
     "puppeteer": "^20.8.0",
     "ts-node": "^10.9.1",
     "typechain": "^8.2.0",

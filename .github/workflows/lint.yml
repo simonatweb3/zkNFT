@@ -1,0 +1,42 @@
+# This workflow will run tests using node and then publish a package to GitHub Packages when a release is created
+# For more information see: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
+name: Node.js CI
+
+on:
+  pull_request:
+    branches:
+      - main # when PR merge to main
+
+jobs:
+  ci-lint:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.17.0]
+
+    steps:
+      - name: check out git repo
+        uses: actions/checkout@v3
+        with:
+          lfs: true
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install Yarn
+        run: |
+          npm i -g corepack && corepack prepare yarn@stable --activate && yarn plugin import workspace-tools
+
+      - name: Set Yarn version 3.5.0
+        run: |
+          yarn set version 3.5.0
+          yarn --version
+
+      # - name: Install dependencies
+      #   run: yarn
+
+      - name: Run all lint
+        run: cd packages/jssdk && yarn lint
