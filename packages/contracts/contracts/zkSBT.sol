@@ -3,16 +3,9 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract ZkSBT is ERC721URIStorage, Ownable {
-    using Counters for Counters.Counter;
-    Counters.Counter private _tokenIds;
-
-    // single reserve for one address
-    uint256 public mintsPerReserve;
-
     // operators allowed to mint SBT
     mapping(address => bool) public operators;
 
@@ -21,9 +14,6 @@ contract ZkSBT is ERC721URIStorage, Ownable {
 
     // mintId status
     mapping(uint256 => bool) public mintIdStatus;
-
-    // mintId => baseUrl
-    mapping(uint256 => string) public sbtBatchBaseUrl;
 
     // zkAddress => identityCommitment, to check potential collision
     mapping(address => uint256) public zkAddressPreImage;
