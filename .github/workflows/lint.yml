@@ -38,5 +38,8 @@ jobs:
       - name: Install dependencies
         run: yarn
 
-      - name: Run jssk lint
+      - name: Run contracts lint
+        run: cd packages/contracts && yarn lint
+
+      - name: Run jssdk lint
         run: cd packages/jssdk && yarn lint
