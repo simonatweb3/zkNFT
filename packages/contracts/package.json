@@ -5,6 +5,7 @@
   "scripts": {
     "lint:check": "solhint --config ./.solhint.json  \"contracts/**/*.sol\"",
     "lint:fix": "solhint --config ./.solhint.json  \"contracts/**/*.sol\" --fix",
+    "lint": "yarn lint:check",
     "build": "yarn lint:check && hardhat compile",
     "test": "yarn build && hardhat test"
   },
