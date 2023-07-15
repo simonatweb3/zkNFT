@@ -1,0 +1,39 @@
+diff --git a/dist/index.mjs b/dist/index.mjs
+index 12aa204406c1667701d1bedcd135e89c8959f558..26bd2a24125d632d2ef610954365e54e42c0fc09 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -129,7 +129,7 @@ var Group = /** @class */ (function () {
+         if (treeDepth === void 0) { treeDepth = 20; }
+         if (members === void 0) { members = []; }
+         if (treeDepth < 16 || treeDepth > 32) {
+-            throw new Error("The tree depth must be between 16 and 32");
++            //throw new Error("The tree depth must be between 16 and 32");
+         }
+         this._id = id;
+         this.merkleTree = new IncrementalMerkleTree(poseidon2_2, treeDepth, hash(id), 2, members.map(BigInt));
+diff --git a/dist/index.node.js b/dist/index.node.js
+index b9fee84fc43e1b040921b64fb26da0a936e7fd54..416dfd75c26170ccd4f380736245a5ac9249edf6 100644
+--- a/dist/index.node.js
++++ b/dist/index.node.js
+@@ -133,7 +133,7 @@ var Group = /** @class */ (function () {
+         if (treeDepth === void 0) { treeDepth = 20; }
+         if (members === void 0) { members = []; }
+         if (treeDepth < 16 || treeDepth > 32) {
+-            throw new Error("The tree depth must be between 16 and 32");
++            //throw new Error("The tree depth must be between 16 and 32");
+         }
+         this._id = id;
+         this.merkleTree = new incrementalMerkleTree.IncrementalMerkleTree(poseidon2_2, treeDepth, hash(id), 2, members.map(BigInt));
+diff --git a/src/group.ts b/src/group.ts
+index 75534db2b9f21ac970d8621c610d6212a6909b11..508c058633726f0e5ee626d14b49d69d32933d46 100644
+--- a/src/group.ts
++++ b/src/group.ts
+@@ -16,7 +16,7 @@ export default class Group {
+      */
+     constructor(id: BigNumberish, treeDepth = 20, members: BigNumberish[] = []) {
+         if (treeDepth < 16 || treeDepth > 32) {
+-            throw new Error("The tree depth must be between 16 and 32")
++            //throw new Error("The tree depth must be between 16 and 32")
+         }
+ 
+         this._id = id
