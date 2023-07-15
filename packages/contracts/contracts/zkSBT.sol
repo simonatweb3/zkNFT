@@ -43,7 +43,8 @@ contract ZkSBT is ERC721URIStorage, Ownable {
         uint256 indexed _chainId,
         address _assetContractAddress,
         uint256 _assetTokenId,
-        RANGE range
+        RANGE range,
+        bytes data
     );
 
     modifier onlyOperator() {
@@ -70,10 +71,23 @@ contract ZkSBT is ERC721URIStorage, Ownable {
         address assetContractAddress;
         uint256 assetTokenId;
         RANGE range;
+        bytes data;
     }
 
     constructor(address _pomp) ERC721("ZkSBT", "ZkSBT") {
         pomp = _pomp;
+    }
+
+    // override _transfer to prevent SBT from being transferred
+    function _transfer(
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal pure override {
+        from;
+        to;
+        tokenId;
+        revert("SBT can't be transferred");
     }
 
     function mintWithSbtId(
@@ -83,19 +97,14 @@ contract ZkSBT is ERC721URIStorage, Ownable {
         address assetContractAddress, //asset contract address
         uint256 assetTokenId, //asset token id
         uint256 sbtId, //sbt id in the per sbt identity
-        RANGE range
+        RANGE range,
+        bytes memory data
     ) public onlyOperator {
         // check identityCommitment is not 0
         require(identityCommitment != 0, "invalid identityCommitment");
 
         // check mintId is open
         require(mintIdStatus[mintId], "mintId not available");
-
-        // check mintId is open
-        require(
-            assetContractAddress != address(0),
-            "invalid asset contract address "
-        );
 
         // the tokenId to be minted i sbtId
         uint256 tokenId = sbtId;
@@ -114,7 +123,8 @@ contract ZkSBT is ERC721URIStorage, Ownable {
             chainId,
             assetContractAddress,
             assetTokenId,
-            range
+            range,
+            data
         );
 
         emit MintZkSBT(
@@ -123,7 +133,8 @@ contract ZkSBT is ERC721URIStorage, Ownable {
             chainId,
             assetContractAddress,
             tokenId,
-            range
+            range,
+            data
         );
     }
 
