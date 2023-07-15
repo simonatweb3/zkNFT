@@ -16,12 +16,12 @@ describe("Pomp", function () {
     console.log("pomp contract : ", await pc.getAddress())
   });
 
-  it("Create Pomp Pool", async function () {
-  });
+  // it("Create Pomp Pool", async function () {
+  // });
 
-  it("Mint Pomp", async function () {
-  });
+  // it("Mint Pomp", async function () {
+  // });
 
-  it("Verify Pomp Membership", async function () {
-  });
+  // it("Verify Pomp Membership", async function () {
+  // });
 });

@@ -3,9 +3,11 @@
   "version": "0.0.1",
   "packageManager": "yarn@3.5.0",
   "scripts": {
-    "lint:check": "solhint --config ./.solhint.json  \"contracts/**/*.sol\"",
-    "lint:fix": "solhint --config ./.solhint.json  \"contracts/**/*.sol\" --fix",
-    "build": "yarn lint:check && hardhat compile",
+    "lint:sol": "solhint --config ./.solhint.json  \"contracts/**/*.sol\"",
+    "lint:solfix": "solhint --config ./.solhint.json  \"contracts/**/*.sol\" --fix",
+    "lint:ts": "eslint .",
+    "lint": "yarn lint:ts; yarn lint:sol",
+    "build": "yarn lint:sol && hardhat compile",
     "test": "yarn build && hardhat test"
   },
   "dependencies": {
@@ -23,6 +25,7 @@
     "@typechain/ethers-v6": "^0.4.0",
     "@typechain/hardhat": "^8.0.0",
     "@types/mocha": ">=9.1.0",
+    "eslint": "^8.45.0",
     "ethers": "^6.6.2",
     "hardhat": "^2.16.1",
     "hardhat-gas-reporter": "^1.0.8",
