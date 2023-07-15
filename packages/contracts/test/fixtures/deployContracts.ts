@@ -24,11 +24,13 @@ export async function deployContracts() {
     provider as any
   );
   const user_1 = new ethers.Wallet(randomHex(32), provider as any);
+  const user_2 = new ethers.Wallet(randomHex(32), provider as any);
 
   await faucet(ownerOfPompContract.address, provider as any);
   await faucet(ownerOfZkSbtContract.address, provider as any);
   await faucet(operatorOfZkSbtContract.address, provider as any);
   await faucet(user_1.address, provider as any);
+  await faucet(user_2.address, provider as any);
 
   // deploy Pomp
   let PompFactory = await ethers.getContractFactory(
@@ -51,6 +53,7 @@ export async function deployContracts() {
     ownerOfZkSbtContract,
     operatorOfZkSbtContract,
     user_1,
+    user_2,
     pomp,
     zkSBT,
   };

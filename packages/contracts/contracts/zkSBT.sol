@@ -191,7 +191,7 @@ contract ZkSBT is ERC721URIStorage, Ownable {
      */
     function setBaseUri(
         string memory _baseUri
-    ) internal onlyOperator returns (bool) {
+    ) external onlyOperator returns (bool) {
         baseUri = _baseUri;
         return true;
     }
