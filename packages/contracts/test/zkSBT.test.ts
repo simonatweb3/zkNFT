@@ -1,8 +1,8 @@
-import { Wallet } from "ethers";
 import { deployContracts } from "./fixtures/deployContracts";
 import { Pomp, ZkSBT } from "../typechain-types";
 import crypto from "crypto";
 import { expect } from "chai";
+import { Wallet } from "ethers";
 
 describe("ZkSBT basic test", async function () {
   let ownerOfPompContract: Wallet;
