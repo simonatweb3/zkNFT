@@ -76,12 +76,6 @@ contract ZkSBT is ERC721URIStorage, Ownable {
         pomp = _pomp;
     }
 
-    function safeMint(address to) public onlyOperator {
-        uint256 tokenId = _tokenIds.current();
-        _tokenIds.increment();
-        _safeMint(to, tokenId);
-    }
-
     function mintWithSbtId(
         uint256 identityCommitment, //record identity commitment of user
         uint256 mintId, //mint id
