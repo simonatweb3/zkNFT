@@ -35,8 +35,8 @@ jobs:
           yarn set version 3.5.0
           yarn --version
 
-      # - name: Install dependencies
-      #   run: yarn
+      - name: Install dependencies
+        run: yarn
 
       - name: Run all lint
         run: cd packages/jssdk && yarn lint
