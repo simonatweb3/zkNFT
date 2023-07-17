@@ -12,7 +12,6 @@
     },
     "dependencies": {
         "@openzeppelin/contracts": "^4.9.2",
-        "@pomp-eth/circuits": "0.0.1",
         "circomlibjs": "^0.1.7"
     },
     "devDependencies": {
