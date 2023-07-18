@@ -42,7 +42,7 @@ jobs:
         run: yarn
 
       - name: Compile contract packages
-        run: cd packages/contracts; yarn build; cd -;
+        run: cd packages/contracts; yarn install; yarn build; cd -;
 
       - name: Run all unit tests
         run: cd packages/contracts && yarn test
