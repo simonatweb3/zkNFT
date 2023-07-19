@@ -1,10 +1,8 @@
 import { deployContracts } from "./fixtures/deployContracts";
 import { Pomp, ZkSBT } from "../typechain-types";
-import crypto from "crypto";
 import { expect } from "chai";
 import { Wallet } from "ethers";
 import { ethers } from "hardhat";
-import { randomHex } from "../utils/encoding";
 import { generateRandomIdentityCommitment } from "../utils/utils";
 
 describe("ZkSBT basic test", async function () {

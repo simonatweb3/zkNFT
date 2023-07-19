@@ -1,13 +1,15 @@
 import { parseEther } from "@ethersproject/units";
 import { ethers } from "hardhat";
-
 import { randomHex } from "./encoding";
 
-import type { JsonRpcProvider } from "@ethersproject/providers";
+import { HardhatEthersProvider } from "@nomicfoundation/hardhat-ethers/internal/hardhat-ethers-provider";
 
 const TEN_THOUSAND_ETH = parseEther("10000").toHexString().replace("0x0", "0x");
 
-export const faucet = async (address: string, provider: JsonRpcProvider) => {
+export const faucet = async (
+  address: string,
+  provider: HardhatEthersProvider
+) => {
   await provider.send("hardhat_setBalance", [address, TEN_THOUSAND_ETH]);
 };
 
