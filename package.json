@@ -9,7 +9,7 @@
     "private": true,
     "workspaces": [
         "packages/jssdk",
-        "packages/circuit",
+        "packages/circuits",
         "packages/contracts",
         "packages/browser",
         "packages/frontend",
