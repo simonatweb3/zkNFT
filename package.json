@@ -6,6 +6,15 @@
         "lint:ts": "eslint .",
         "test": "cd packages/contracts && yarn test"
     },
+    "private": true,
+    "workspaces": [
+        "packages/jssdk",
+        "packages/circuit",
+        "packages/contracts",
+        "packages/browser",
+        "packages/frontend",
+        "packages/backend"
+    ],
     "husky": {
         "hooks": {
             "pre-commit": "yarn run format"
