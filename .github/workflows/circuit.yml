@@ -50,7 +50,7 @@ jobs:
         run: yarn
 
       - name: Compile all packages
-        run: cd packages/circuits; yarn install; yarn build; cd -;
+        run: cd packages/circuits; yarn build; cd -;
 
       - name: Run all unit tests
         run: cd packages/circuits && yarn test
