@@ -1,7 +1,7 @@
 import {Contract, ethers, Signer} from "ethers"
 import { Identity } from "@semaphore-protocol/identity"
 import { poseidon2 } from "poseidon-lite"
-import pompJson from "./ABI/Pomp.json" assert { type: "json" }
+import * as pompJson from "./ABI/Pomp.json"
 
 export type FileType = any;
 export const POMP_KEY_SIGN_MESSAGE =

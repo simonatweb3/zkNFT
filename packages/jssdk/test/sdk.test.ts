@@ -1,6 +1,6 @@
 //import {PompSdk} from "@pomp-eth/jssdk/src/Sdk"
 //import { expect } from "chai";
-import { PompSdk } from "../src/sdk.js"
+import { PompSdk } from "../src/sdk"
 //import {PompSdk} from "../src/index"
 import { ethers, Signer, Wallet } from "ethers";
 

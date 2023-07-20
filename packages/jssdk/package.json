@@ -2,8 +2,9 @@
   "name": "@pomp-eth/jssdk",
   "packageManager": "yarn@3.5.0",
   "version": "0.0.1",
-  "type": "module",
-  "module": "dist/index.js",
+  "main": "dist/index.js",
+  "module": "dist.esm/index.js",
+  "types": "src/index.ts",
   "dependencies": {
     "@ethersproject/abi": "^5.7.0",
     "@ethersproject/providers": "^5.7.2",
@@ -15,7 +16,9 @@
   "scripts": {
     "lint:ts": "eslint .",
     "lint": "yarn lint:ts",
-    "build": "rm -rf dist; tsc",
+    "build:commonjs" : "tsc -p tsconfig.build.json",
+    "build:esm" : "tsc -p tsconfig.build.esm.json",
+    "build": "rm -rf dist*; yarn build:commonjs; yarn build:esm",
     "prepublish": "yarn build",
     "test": "ts-node test/sdk.test.ts"
   },

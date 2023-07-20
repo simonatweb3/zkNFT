@@ -2,16 +2,16 @@
 import { ethers } from "hardhat";
 
 // browser compatible 
-import { Signer } from "ethers";
 import { Pomp, PompVerifier, PompVerifier__factory, Pomp__factory, PoseidonT3__factory } from "../typechain-types";
 import { PompSdk } from "@pomp-eth/jssdk"
 import * as circomlibjs from "circomlibjs"
+import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 describe("Pomp", function () {
-  let owner: Signer;
-  let signers: Signer[];
+  let owner: SignerWithAddress;
+  let signers: SignerWithAddress[];
   let pc : Pomp
-  //let sdk : PompSdk
+  let sdk : PompSdk
   before(async () => {
     signers = await ethers.getSigners();
     owner = signers[10];
@@ -53,7 +53,12 @@ describe("Pomp", function () {
   });
 
   it("Create Pomp SDK", async function () {
-    //sdk = await PompSdk.
+    // sdk = await PompSdk.create(
+    //   await pc.getAddress(),
+    //   owner,
+    //   "https://p0x-labs.s3.amazonaws.com/pomp/pomp.wasm",
+    //   "https://p0x-labs.s3.amazonaws.com/pomp/pomp.zkey"
+    // )
     console.log("PompSdk : ", PompSdk)
   });
 
