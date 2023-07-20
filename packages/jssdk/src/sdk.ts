@@ -1,7 +1,9 @@
-import {ethers, Signer} from "ethers"
+import {Contract, ethers, Signer} from "ethers"
 import { Identity } from "@semaphore-protocol/identity"
 import { poseidon2 } from "poseidon-lite"
+import pompJson from "./ABI/Pomp.json" assert { type: "json" }
 
+export type FileType = any;
 export const POMP_KEY_SIGN_MESSAGE =
   "Sign this message to generate your Pomp Privacy Key. This key lets the application decrypt your identity on Pomp.\n\nIMPORTANT: Only sign this message if you trust the application.";
 
@@ -41,7 +43,34 @@ export class PompIdentity {
   }
 }
 
-export class PompSdk {
+interface IPomp {
+  // mint: (assetId: number) => Promise<number>;
+  // allocate_asset_id
+}
+
+export class PompSdk implements IPomp {
+  pc: Contract;
+  signer: Signer;
+  pomp_wasm: FileType | undefined;
+  pomp_zkey: FileType | undefined;
+
+  private constructor(pompContract: string, signer: Signer) {
+    this.signer = signer;
+    this.pc = new ethers.Contract(pompContract, pompJson.abi, signer);
+  }
+
+  public static create = async (
+    pompContract: string,
+    signer: Signer,
+    pomp_wasm: FileType,
+    pomp_zkey: FileType,
+  ): Promise<PompSdk> => {
+    const ctx = new PompSdk(pompContract, signer);
+    ctx.pomp_wasm = pomp_wasm
+    ctx.pomp_zkey = pomp_zkey
+    return ctx;
+  };
+  
   public async generateAccountPrivKeys(signer : Signer) {
     const signature = await signer.signMessage(POMP_KEY_SIGN_MESSAGE)
     const trapdoor = ethers.utils.hexlify('0x' + signature.slice(2, 34))
@@ -54,6 +83,24 @@ export class PompSdk {
     const identityCommitment = identity.getCommitment()
     return identityCommitment;
   }
+
+  // get the allocated asset_id from backend/on-chain contract
+  public allocate_asset_id() {
+
+  }
+
+  // mint(user tx / server tx) a sbt on-chain (sbt[asset_id] = identity), generate a proof key for backend. 
+  public mint() {
+
+  }
+
+  public verify() {
+
+  }
+
+  // generate proof.
+
+  //
 
   // format long identity to UI-friendly style xxxx...xxxx
   // public async showIdentity(keysJson : string) {
