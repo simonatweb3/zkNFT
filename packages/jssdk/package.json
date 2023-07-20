@@ -6,18 +6,16 @@
   "module": "dist.esm/index.js",
   "types": "src/index.ts",
   "dependencies": {
-    "@ethersproject/abi": "^5.7.0",
-    "@ethersproject/providers": "^5.7.2",
     "@semaphore-protocol/identity": "^3.10.1",
-    "@typechain/ethers-v5": "^11.0.0",
-    "ethers": "^5.7.2",
+    "@typechain/ethers-v6": "^0.4.2",
+    "ethers": "^6.6.4",
     "poseidon-lite": "^0.2.0"
   },
   "scripts": {
     "lint:ts": "eslint .",
     "lint": "yarn lint:ts",
-    "build:commonjs" : "tsc -p tsconfig.build.json",
-    "build:esm" : "tsc -p tsconfig.build.esm.json",
+    "build:commonjs": "tsc -p tsconfig.build.json",
+    "build:esm": "tsc -p tsconfig.build.esm.json",
     "build": "rm -rf dist*; yarn build:commonjs; yarn build:esm",
     "prepublish": "yarn build",
     "test": "ts-node test/sdk.test.ts"

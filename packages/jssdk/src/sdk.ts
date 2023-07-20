@@ -73,8 +73,8 @@ export class PompSdk implements IPomp {
   
   public async generateAccountPrivKeys(signer : Signer) {
     const signature = await signer.signMessage(POMP_KEY_SIGN_MESSAGE)
-    const trapdoor = ethers.utils.hexlify('0x' + signature.slice(2, 34))
-    const nullifier = ethers.utils.hexlify('0x' + signature.slice(34, 66))
+    const trapdoor = ethers.hexlify('0x' + signature.slice(2, 34))
+    const nullifier = ethers.hexlify('0x' + signature.slice(34, 66))
     return { trapdoor, nullifier };
   }
 

@@ -9,7 +9,7 @@ import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 describe("Pomp", function () {
   let owner: SignerWithAddress;
-  let signers: SignerWithAddress[];
+  let signers: SignerWithAddress;
   let pc : Pomp
   let sdk : PompSdk
   before(async () => {
@@ -53,13 +53,13 @@ describe("Pomp", function () {
   });
 
   it("Create Pomp SDK", async function () {
-    // sdk = await PompSdk.create(
-    //   await pc.getAddress(),
-    //   owner,
-    //   "https://p0x-labs.s3.amazonaws.com/pomp/pomp.wasm",
-    //   "https://p0x-labs.s3.amazonaws.com/pomp/pomp.zkey"
-    // )
-    console.log("PompSdk : ", PompSdk)
+    sdk = await PompSdk.create(
+      await pc.getAddress(),
+      owner,
+      "https://p0x-labs.s3.amazonaws.com/pomp/pomp.wasm",
+      "https://p0x-labs.s3.amazonaws.com/pomp/pomp.zkey"
+    )
+    console.log("sdk : ", sdk)
   });
 
   // it("Create Pomp Pool", async function () {
