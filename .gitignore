@@ -6,7 +6,11 @@ wasm/
 zkey
 
 .yarn/*
-*/yarn-error.log
+**/yarn-error.log
+**/pomp.r1cs
+**/pomp.sym
+**/pomp_constraints.json
+
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases
