@@ -42,4 +42,4 @@ jobs:
         run: cd packages/contracts && yarn lint
 
       - name: Run jssdk lint
-        run: cd packages/jssdk && yarn install && yarn lint
+        run: cd packages/jssdk && yarn lint
