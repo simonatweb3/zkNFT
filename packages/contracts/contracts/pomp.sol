@@ -10,7 +10,7 @@ interface IVerifier {
         uint256[2][2] memory b,
         uint256[2] memory c,
         uint256[] memory input
-    ) external view;
+    ) external view returns(bool);
 }
 
 struct Pool {
@@ -39,8 +39,8 @@ contract Pomp is SemaphoreGroups, Ownable {
   mapping(uint => mapping(uint => Pool)) pools;
 
   // external nullifier, increase per verify
-  mapping(uint => mapping(uint => uint)) salts;  // random?
-  mapping(uint => bool) nullifierHashes;
+  mapping(uint => mapping(uint => uint)) public salts;  // random?
+  mapping(uint => bool) public nullifierHashes;
 
   mapping(uint256 => IVerifier) internal verifiers;
 
@@ -61,12 +61,19 @@ contract Pomp is SemaphoreGroups, Ownable {
     uint asset,
     uint range,
     uint poolDepth
-  ) public onlyOwner {
+  ) internal {
     _createGroup(latestPoolId, poolDepth);
     pools[asset][range] = Pool({
       id : latestPoolId++,
       depth : poolDepth
     });
+  }
+
+  function addAsset(
+    address token
+    // range list
+  ) public onlyOwner {
+
   }
 
   // batch mint
@@ -98,12 +105,13 @@ contract Pomp is SemaphoreGroups, Ownable {
     inputs[0] = merkleTreeRoot;
     inputs[1] = nullifierHash;
     inputs[2] = salts[asset][range];
-    verifiers[merkleTreeDepth].verifyProof(
+    bool valid = verifiers[merkleTreeDepth].verifyProof(
         [proof[0], proof[1]],
         [[proof[2], proof[3]], [proof[4], proof[5]]],
         [proof[6], proof[7]],
         inputs
     );
+    require(valid, "proof invalid!");
 
     // random change salts[asset][range]?
   }

@@ -3,9 +3,12 @@ import { ethers } from "hardhat";
 
 // browser compatible 
 import { Pomp, PompVerifier, PompVerifier__factory, Pomp__factory, PoseidonT3__factory } from "../typechain-types";
-import { PompSdk } from "@pomp-eth/jssdk"
+import { ASSET, generateProof, PompSdk, RANGE, TREE_DEPTH } from "@pomp-eth/jssdk"
 import * as circomlibjs from "circomlibjs"
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
+import { Group } from "@semaphore-protocol/group"
+import { dnld_aws, P0X_DIR } from "./utility";
+import { resolve } from "path";
 
 describe("Pomp", function () {
   let owner: SignerWithAddress;
@@ -14,7 +17,16 @@ describe("Pomp", function () {
   let sdk : PompSdk
   before(async () => {
     signers = await ethers.getSigners();
-    owner = signers[10];
+    owner = signers[0];   // TODO : why not 10
+    await Promise.all(
+      [
+        "wasm/pomp.wasm",
+        "zkey/pomp.zkey",
+      ].map(async (e) => {
+        await dnld_aws(e);
+      }),
+    );
+
   });
 
   it("Deploy", async function () {
@@ -56,18 +68,48 @@ describe("Pomp", function () {
     sdk = await PompSdk.create(
       await pc.getAddress(),
       owner,
-      "https://p0x-labs.s3.amazonaws.com/pomp/pomp.wasm",
-      "https://p0x-labs.s3.amazonaws.com/pomp/pomp.zkey"
+      resolve(P0X_DIR, "./wasm/pomp.wasm"),
+      resolve(P0X_DIR, "./zkey/pomp.zkey")
     )
-    console.log("sdk : ", sdk)
   });
+
+
+  // it("Add Asset", async function () {
+  // });
 
   // it("Create Pomp Pool", async function () {
   // });
 
-  // it("Mint Pomp", async function () {
-  // });
+  it("Mint Pomp", async function () {
+    await sdk.mint(ASSET.ETH, RANGE.RANGE_100)
+  });
 
-  // it("Verify Pomp Membership", async function () {
-  // });
+  it("Verify Pomp Membership", async function () {
+    // re-construct merkle tree offline
+    const zksbt = sdk.allocate_asset_id()
+    const pomp_commitment = sdk.per_sbt_commitment(zksbt)
+    const group = new Group(123, TREE_DEPTH, [pomp_commitment])
+
+    // 3/3. generate witness, prove, verify
+    const proof =  await generateProof(
+        sdk.identity,
+        await pc.salts(ASSET.ETH, RANGE.RANGE_100),
+        zksbt,
+        group,
+        resolve(P0X_DIR, "./wasm/pomp.wasm"),
+        resolve(P0X_DIR, "./zkey/pomp.zkey")
+    )
+
+    console.log("proof : ", proof)
+
+
+    await (await pc.verify(
+      ASSET.ETH,
+      RANGE.RANGE_100,
+      proof.publicSignals.nullifierHash,
+      //"1234",
+      proof.proof
+    )).wait()
+
+  });
 });

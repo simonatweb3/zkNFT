@@ -11,13 +11,16 @@ async function test() {
   const sdk = await PompSdk.create(
     "0x0",
     signer, 
-    "https://p0x-labs.s3.amazonaws.com/pomp/pomp.wasm",
-    "https://p0x-labs.s3.amazonaws.com/pomp/pomp.zkey"
+    "https://p0x-labs.s3.amazonaws.com/pomp/wasm/pomp.wasm",
+    "https://p0x-labs.s3.amazonaws.com/pomp/zkey/pomp.zkey"
   );  // TODO
-  const keys = await sdk.generateAccountPrivKeys(signer)
+
+  console.log("sdk : ", sdk)
+
+  const keys = await PompSdk.generateAccountPrivKeys(signer)
   console.log("keys : ", keys);
 
-  const id = await sdk.generateIdentity(JSON.stringify(keys))
+  const id = await PompSdk.generateIdentity(JSON.stringify(keys))
   console.log("id : ", id);
 
   //expect(ethers.utils.verifyMessage(POMP_KEY_SIGN_MESSAGE, signature)).equal(await signer.getAddress())
