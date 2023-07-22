@@ -8,7 +8,7 @@
     "lint:ts": "eslint .",
     "lint": "yarn lint:ts; yarn lint:sol",
     "build": "yarn lint:sol && hardhat compile",
-    "test": "yarn build && hardhat test"
+    "test": "hardhat compile && hardhat test"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.9.2",

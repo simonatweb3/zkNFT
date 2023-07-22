@@ -7,7 +7,7 @@ import { keccak256 } from "@ethersproject/keccak256"
  * @param message The message to be hashed.
  * @returns The message digest.
  */
-export default function hash(message: BytesLike | Hexable | number | bigint): bigint {
+export function hash(message: BytesLike | Hexable | number | bigint): bigint {
     message = BigNumber.from(message).toTwos(256).toHexString()
     message = zeroPad(message, 32)
 

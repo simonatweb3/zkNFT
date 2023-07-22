@@ -1,9 +1,12 @@
 // browser non-compatible 
 import { ethers } from "hardhat";
+import * as fs from "fs";
+const snarkjs = require('snarkjs');
+import { expect } from "chai";
 
 // browser compatible 
 import { Pomp, PompVerifier, PompVerifier__factory, Pomp__factory, PoseidonT3__factory } from "../typechain-types";
-import { ASSET, generateProof, PompSdk, RANGE, TREE_DEPTH } from "@pomp-eth/jssdk"
+import { ASSET, generateProof, hash, PompSdk, RANGE, TREE_DEPTH, unpackProof } from "@pomp-eth/jssdk"
 import * as circomlibjs from "circomlibjs"
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { Group } from "@semaphore-protocol/group"
@@ -88,7 +91,7 @@ describe("Pomp", function () {
     // re-construct merkle tree offline
     const zksbt = sdk.allocate_asset_id()
     const pomp_commitment = sdk.per_sbt_commitment(zksbt)
-    const group = new Group(123, TREE_DEPTH, [pomp_commitment])
+    const group = new Group(0, TREE_DEPTH, [pomp_commitment]) // group id --> root
 
     // 3/3. generate witness, prove, verify
     const proof =  await generateProof(
@@ -102,12 +105,27 @@ describe("Pomp", function () {
 
     console.log("proof : ", proof)
 
+    // off-chain verify proof
+    const zkey_final = {
+      type : "mem",
+      data : new Uint8Array(Buffer.from(fs.readFileSync(resolve(P0X_DIR, "./zkey/pomp.zkey"))))
+    }
+    const vKey = await snarkjs.zKey.exportVerificationKey(zkey_final);
+    expect(await snarkjs.groth16.verify(
+        vKey,
+        [
+            proof.publicSignals.merkleRoot,
+            proof.publicSignals.nullifierHash,
+            await pc.salts(ASSET.ETH, RANGE.RANGE_100)
+        ],
+        unpackProof(proof.proof)
+    )).eq(true)
 
+    // on-chain verify
     await (await pc.verify(
       ASSET.ETH,
       RANGE.RANGE_100,
       proof.publicSignals.nullifierHash,
-      //"1234",
       proof.proof
     )).wait()
 

@@ -7,7 +7,6 @@ import {BigNumberish, Proof, SnarkJSProof } from "@semaphore-protocol/proof"
 import { poseidon2 } from "poseidon-lite/poseidon2"
 import { BytesLike, Hexable } from "@ethersproject/bytes"
 import { BigNumber } from "@ethersproject/bignumber"
-import hash from "./hash"
 const snarkjs = require('snarkjs');
 
 export declare type PublicSignals = {
@@ -20,7 +19,7 @@ export declare type FullProof = {
     publicSignals: PublicSignals;
 };
 
-function packProof(originalProof: SnarkJSProof): Proof {
+export function packProof(originalProof: SnarkJSProof): Proof {
     return [
         originalProof.pi_a[0],
         originalProof.pi_a[1],
@@ -33,18 +32,18 @@ function packProof(originalProof: SnarkJSProof): Proof {
     ]
 }
 
-// function unpackProof(proof: Proof): SnarkJSProof {
-//     return {
-//         pi_a: [proof[0], proof[1]],
-//         pi_b: [
-//             [proof[3], proof[2]],
-//             [proof[5], proof[4]]
-//         ],
-//         pi_c: [proof[6], proof[7]],
-//         protocol: "groth16",
-//         curve: "bn128"
-//     }
-// }
+export function unpackProof(proof: Proof): SnarkJSProof {
+    return {
+        pi_a: [proof[0], proof[1]],
+        pi_b: [
+            [proof[3], proof[2]],
+            [proof[5], proof[4]]
+        ],
+        pi_c: [proof[6], proof[7]],
+        protocol: "groth16",
+        curve: "bn128"
+    }
+}
 
 export async function generateProof(
     identity : Identity,
@@ -65,7 +64,8 @@ export async function generateProof(
             identityNullifier: identity.getNullifier(),
             treePathIndices: merkleProof.pathIndices,
             treeSiblings: merkleProof.siblings,
-            externalNullifier: hash(externalNullifier),
+            //externalNullifier: hash(externalNullifier),
+            externalNullifier: externalNullifier,
             zksbt : zksbt
         },
         wasmFile,
