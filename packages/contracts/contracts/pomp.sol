@@ -4,7 +4,24 @@ pragma solidity >=0.7.0 <0.9.0;
 import "@semaphore-protocol/contracts/base/SemaphoreGroups.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+interface IVerifier {
+    function verifyProof(
+        uint256[2] memory a,
+        uint256[2][2] memory b,
+        uint256[2] memory c,
+        uint256[] memory input
+    ) external view returns(bool);
+}
+
+struct Pool {
+    uint id;
+    uint depth;
+}
+
 contract Pomp is SemaphoreGroups, Ownable {
+  uint constant POMP_POOL_DEPTH = 10;
+  uint public latestPoolId;
+
   enum ASSET {
     ETH,
     BNB
@@ -18,23 +35,45 @@ contract Pomp is SemaphoreGroups, Ownable {
       RANGE_100      // >100
   }
 
-  // asset_type --> asset_range --> merkle tree)
-  mapping(uint => mapping(uint => uint)) groups;
+  // asset_type --> asset_range --> pools)
+  mapping(uint => mapping(uint => Pool)) pools;
 
   // external nullifier, increase per verify
-  mapping(uint => mapping(uint => uint)) salts;  // random?
-  mapping(uint => bool) nullifierHashes;
+  mapping(uint => mapping(uint => uint)) public salts;  // random?
+  mapping(uint => bool) public nullifierHashes;
 
-  constructor() Ownable() {
+  mapping(uint256 => IVerifier) internal verifiers;
+
+  constructor(
+    IVerifier _verifier,
+    uint poolDepth
+  ) Ownable() {
+    // pomp verifier
+    verifiers[poolDepth] = _verifier;
+
     // init build-in pomp pool
-    // createPompPool
+    latestPoolId = 0;
+    createPompPool(uint(ASSET.ETH), uint(RANGE.RANGE_100), poolDepth);
+    createPompPool(uint(ASSET.BNB), uint(RANGE.RANGE_100), poolDepth);
   }
 
   function createPompPool(
     uint asset,
-    uint range
+    uint range,
+    uint poolDepth
+  ) internal {
+    _createGroup(latestPoolId, poolDepth);
+    pools[asset][range] = Pool({
+      id : latestPoolId++,
+      depth : poolDepth
+    });
+  }
+
+  function addAsset(
+    address token
+    // range list
   ) public onlyOwner {
-    // createGroup
+
   }
 
   // batch mint
@@ -43,13 +82,38 @@ contract Pomp is SemaphoreGroups, Ownable {
     uint asset,
     uint range
   ) public onlyOwner {
-    // addMember
-
-    // sbt[id] = identity
+    for (uint256 idx = 0; idx < identity.length; idx++) {
+      _addMember(pools[asset][range].id, identity[idx]);
+      // TODO : mint sbt[sbt_id] = identity ?
+    }
   }
 
-  function verify() public {
-    // PompVerifier.verifyProof()
+  function verify(
+    uint asset,
+    uint range,
+    // uint merkle_root,
+    // uint verify_time,
+    uint256 nullifierHash,
+    uint256[8] calldata proof
+  ) public {
+    // check merkle_root match verify_time
+
+    // now using the latest root
+    uint256 merkleTreeDepth = getMerkleTreeDepth(pools[asset][range].id);
+    uint256 merkleTreeRoot = getMerkleTreeRoot(pools[asset][range].id);
+    uint256[] memory inputs = new uint256[](3);
+    inputs[0] = merkleTreeRoot;
+    inputs[1] = nullifierHash;
+    inputs[2] = salts[asset][range];
+    bool valid = verifiers[merkleTreeDepth].verifyProof(
+        [proof[0], proof[1]],
+        [[proof[2], proof[3]], [proof[4], proof[5]]],
+        [proof[6], proof[7]],
+        inputs
+    );
+    require(valid, "proof invalid!");
+
+    // random change salts[asset][range]?
   }
 
 }
