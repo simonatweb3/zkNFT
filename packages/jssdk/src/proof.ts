@@ -7,8 +7,8 @@ import {BigNumberish, Proof, SnarkJSProof } from "@semaphore-protocol/proof"
 import { poseidon2 } from "poseidon-lite/poseidon2"
 import { BytesLike, Hexable } from "@ethersproject/bytes"
 import { BigNumber } from "@ethersproject/bignumber"
-//const snarkjs = require('snarkjs');
-import * as snarkjs from "snarkjs"
+const snarkjs = require('snarkjs');
+//import * as snarkjs from "snarkjs"
 
 export declare type PublicSignals = {
   merkleRoot: BigNumberish;
