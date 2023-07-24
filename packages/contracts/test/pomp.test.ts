@@ -14,7 +14,7 @@ import { dnld_aws, P0X_DIR } from "./utility";
 import { resolve } from "path";
 
 describe("Pomp", function () {
-	this.timeout(6000000);
+  this.timeout(6000000);
   let owner: SignerWithAddress;
   let signers: SignerWithAddress;
   let pc : Pomp
