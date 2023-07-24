@@ -6,7 +6,7 @@
     "lint:sol": "solhint --config ./.solhint.json  \"contracts/**/*.sol\"",
     "lint:solfix": "solhint --config ./.solhint.json  \"contracts/**/*.sol\" --fix",
     "lint:ts": "eslint .",
-    "lint": "yarn lint:ts; yarn lint:sol",
+    "lint": "yarn lint:sol; yarn lint:ts",
     "build": "yarn lint:sol && hardhat compile",
     "test": "hardhat compile && hardhat test"
   },

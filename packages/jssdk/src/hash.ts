@@ -8,8 +8,8 @@ import { keccak256 } from "@ethersproject/keccak256"
  * @returns The message digest.
  */
 export function hash(message: BytesLike | Hexable | number | bigint): bigint {
-    message = BigNumber.from(message).toTwos(256).toHexString()
-    message = zeroPad(message, 32)
+  message = BigNumber.from(message).toTwos(256).toHexString()
+  message = zeroPad(message, 32)
 
-    return BigInt(keccak256(message)) >> BigInt(8)
+  return BigInt(keccak256(message)) >> BigInt(8)
 }

@@ -58,7 +58,7 @@ export enum RANGE {
 }
 
 interface IPomp {
-  // mint: (assetId: number) => Promise<number>;
+  mint: (asset: number, range: number) => Promise<number>;
   // allocate_asset_id
 }
 

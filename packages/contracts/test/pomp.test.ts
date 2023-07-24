@@ -1,7 +1,7 @@
 // browser non-compatible 
 import { ethers } from "hardhat";
 import * as fs from "fs";
-const snarkjs = require('snarkjs');
+import * as snarkjs from "snarkjs"
 import { expect } from "chai";
 
 // browser compatible 
@@ -47,7 +47,7 @@ describe("Pomp", function () {
     // deploy contract : Incremental Binary Tree
     const IncrementalBinaryTreeLibFactory = await ethers.getContractFactory("IncrementalBinaryTree", {
       libraries: {
-          PoseidonT3: await pt3.getAddress()
+        PoseidonT3: await pt3.getAddress()
       }
     })
     const incrementalBinaryTreeLib = await IncrementalBinaryTreeLibFactory.deploy()
@@ -59,7 +59,7 @@ describe("Pomp", function () {
     // deploy contract : POMP
     const ContractFactory = await ethers.getContractFactory("Pomp", {
       libraries: {
-          IncrementalBinaryTree: await incrementalBinaryTreeLib.getAddress()
+        IncrementalBinaryTree: await incrementalBinaryTreeLib.getAddress()
       }
     })
 
@@ -95,12 +95,12 @@ describe("Pomp", function () {
 
     // 3/3. generate witness, prove, verify
     const proof =  await generateProof(
-        sdk.identity,
-        await pc.salts(ASSET.ETH, RANGE.RANGE_100),
-        zksbt,
-        group,
-        resolve(P0X_DIR, "./wasm/pomp.wasm"),
-        resolve(P0X_DIR, "./zkey/pomp.zkey")
+      sdk.identity,
+      await pc.salts(ASSET.ETH, RANGE.RANGE_100),
+      zksbt,
+      group,
+      resolve(P0X_DIR, "./wasm/pomp.wasm"),
+      resolve(P0X_DIR, "./zkey/pomp.zkey")
     )
 
     console.log("proof : ", proof)
@@ -112,13 +112,13 @@ describe("Pomp", function () {
     }
     const vKey = await snarkjs.zKey.exportVerificationKey(zkey_final);
     expect(await snarkjs.groth16.verify(
-        vKey,
-        [
-            proof.publicSignals.merkleRoot,
-            proof.publicSignals.nullifierHash,
-            await pc.salts(ASSET.ETH, RANGE.RANGE_100)
-        ],
-        unpackProof(proof.proof)
+      vKey,
+      [
+        proof.publicSignals.merkleRoot,
+        proof.publicSignals.nullifierHash,
+        await pc.salts(ASSET.ETH, RANGE.RANGE_100)
+      ],
+      unpackProof(proof.proof)
     )).eq(true)
 
     // on-chain verify
