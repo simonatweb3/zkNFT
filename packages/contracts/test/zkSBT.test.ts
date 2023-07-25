@@ -1,4 +1,4 @@
-import { deployContracts } from "./fixtures/deployContracts";
+import { deployContracts, deployPomp } from "./fixtures/deployContracts";
 import { Pomp, ZkSBT } from "../typechain-types";
 import { expect } from "chai";
 import { Wallet } from "ethers";
@@ -6,22 +6,22 @@ import { ethers } from "hardhat";
 import { generateRandomIdentityCommitment } from "../utils/utils";
 
 describe("ZkSBT basic test", async function () {
-  let ownerOfPompContract: Wallet;
+  //   let ownerOfPompContract: Wallet;
   let ownerOfZkSbtContract: Wallet;
   let operatorOfZkSbtContract: Wallet;
   let user_1: Wallet;
   let user_2: Wallet;
-  let pomp: Pomp;
+  //   let pomp: Pomp;
   let zkSBT: ZkSBT;
 
   before(async () => {
     ({
-      ownerOfPompContract,
+      //   ownerOfPompContract,
       ownerOfZkSbtContract,
       operatorOfZkSbtContract,
       user_1,
       user_2,
-      pomp,
+      //   pomp,
       zkSBT,
     } = await deployContracts());
   });
