@@ -52,7 +52,7 @@ template Pomp(nLevels) {
     signal input treeSiblings[nLevels];
 
     signal input externalNullifier;
-    signal input zksbt;
+    //signal input zksbt;
 
     signal output root;
     signal output nullifierHash;
@@ -68,16 +68,17 @@ template Pomp(nLevels) {
     calculateIdentityCommitment.secret <== secret;
 
     // pomp zksbt-bind identity
-    component poseidon = Poseidon(2);
-    poseidon.inputs[0] <== calculateIdentityCommitment.out;
-    poseidon.inputs[1] <== zksbt;
+    // component poseidon = Poseidon(2);
+    // poseidon.inputs[0] <== calculateIdentityCommitment.out;
+    // poseidon.inputs[1] <== zksbt;
 
     component calculateNullifierHash = CalculateNullifierHash();
     calculateNullifierHash.externalNullifier <== externalNullifier;
     calculateNullifierHash.identityNullifier <== identityNullifier;
 
     component inclusionProof = MerkleTreeInclusionProof(nLevels);
-    inclusionProof.leaf <== poseidon.out; // using pomp zksbt-bind identity.
+    //inclusionProof.leaf <== poseidon.out; // using pomp zksbt-bind identity.
+    inclusionProof.leaf <== calculateIdentityCommitment.out;
 
     for (var i = 0; i < nLevels; i++) {
         inclusionProof.siblings[i] <== treeSiblings[i];

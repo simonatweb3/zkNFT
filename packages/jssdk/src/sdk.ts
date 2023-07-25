@@ -1,48 +1,14 @@
 import {Contract, ethers, Signer} from "ethers"
 import { Identity } from "@semaphore-protocol/identity"
-import { poseidon2 } from "poseidon-lite"
-import * as pompJson from "./ABI/Pomp.json"
+import { Group } from "@semaphore-protocol/group"
+//import * as pompJson from "./ABI/Pomp.json"
+import pompJson from "./ABI/Pomp.json"
+import { generateProof } from "./proof"
 
 export type FileType = any;
 export const POMP_KEY_SIGN_MESSAGE =
   "Sign this message to generate your Pomp Privacy Key. This key lets the application decrypt your identity on Pomp.\n\nIMPORTANT: Only sign this message if you trust the application.";
 export const TREE_DEPTH = 10
-
-export class PompIdentity {
-  private semaphore_identity : Identity
-  private sbt_id : number
-  private _commitment: bigint
-
-  constructor(keysJson : string, sbtId : number) {
-    this.semaphore_identity = new Identity(keysJson)
-    this.sbt_id = sbtId
-    this._commitment = poseidon2([this.semaphore_identity.getCommitment(), this.sbt_id])
-  }
-
-  /**
-   * Returns the identity trapdoor.
-   * @returns The identity trapdoor.
-   */
-  public getTrapdoor(): bigint {
-    return this.semaphore_identity.getTrapdoor()
-  }
-
-  /**
-   * Returns the identity nullifier.
-   * @returns The identity nullifier.
-   */
-  public getNullifier(): bigint {
-    return this.semaphore_identity.getNullifier()
-  }
-
-  public getCommitment(): bigint {
-    return this._commitment
-  }
-
-  toString() : string {
-    return `PompIdentity { semaphore_identity : ${this.semaphore_identity.toString()}, sbt_id: ${this.sbt_id} }`;
-  }
-}
 
 export enum ASSET {
   ETH,
@@ -104,38 +70,53 @@ export class PompSdk implements IPomp {
     return new Identity(keysJson)
   }
 
-  // get the allocated asset_id from backend/on-chain contract
+  // web2 interface :  get the allocated asset_id from backend/on-chain contract
   public allocate_asset_id() : bigint {
     return BigInt(5678); // TODO
-  }
-
-  public per_sbt_commitment(
-    sbt_id : bigint
-  ): bigint {
-    return poseidon2([this.identity.getCommitment(), sbt_id])
   }
 
   // mint(user tx / server tx) a sbt on-chain (sbt[asset_id] = identity), generate a proof key for backend. 
   public async mint(asset : ASSET, range : RANGE) {
     console.log("mint pomp for asset ", asset, " range ", range)
 
-    const sbt_id = this.allocate_asset_id()
-    return await (await this.pc.mint([this.per_sbt_commitment(sbt_id)], asset, range)).wait()
-    //return await (await this.pc.mint([this.identity.getCommitment()], asset, range)).wait()
+    return await (await this.pc.mint([this.identity.getCommitment()], asset, range)).wait()
   }
 
-  public verify() {
-    // reconstruct off-chain merkle tree
+  public async verify(
+    group : Group
+  ) {
+    // TODO : reconstruct off-chain merkle tree, subgraph
 
     // generate ZKP
+    const proof =  await generateProof(
+      this.identity,
+      await this.pc.salts(ASSET.ETH, RANGE.RANGE_100),
+      group,
+      this.pomp_wasm,
+      this.pomp_zkey
+    )
+
+    // on-chain verify
+    await (await this.pc.verify(
+      ASSET.ETH,
+      RANGE.RANGE_100,
+      proof.publicSignals.nullifierHash,
+      proof.proof
+    )).wait()
   }
-
-  // generate proof.
-
-  //
 
   // format long identity to UI-friendly style xxxx...xxxx
   // public async showIdentity(keysJson : string) {
   // }
+
+
+  // zkSBT List
+  public async query_sbt(
+    asset : number,
+    range : number
+  ) {
+    // check SbtMinted event
+    return await this.pc.sbt_minted(asset, range, this.identity.getCommitment())
+  }
 
 }

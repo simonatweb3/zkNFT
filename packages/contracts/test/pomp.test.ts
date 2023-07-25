@@ -88,17 +88,14 @@ describe("Pomp", function () {
     await sdk.mint(ASSET.ETH, RANGE.RANGE_100)
   });
 
-  it("Verify Pomp Membership", async function () {
+  it("Off-chain Verify Pomp Membership", async function () {
     // re-construct merkle tree offline
-    const zksbt = sdk.allocate_asset_id()
-    const pomp_commitment = sdk.per_sbt_commitment(zksbt)
-    const group = new Group(0, TREE_DEPTH, [pomp_commitment]) // group id --> root
+    const group = new Group(0, TREE_DEPTH, [sdk.identity.getCommitment()]) // group id --> root
 
     // 3/3. generate witness, prove, verify
     const proof =  await generateProof(
       sdk.identity,
       await pc.salts(ASSET.ETH, RANGE.RANGE_100),
-      zksbt,
       group,
       resolve(P0X_DIR, "./wasm/pomp.wasm"),
       resolve(P0X_DIR, "./zkey/pomp.zkey")
@@ -131,4 +128,16 @@ describe("Pomp", function () {
     )).wait()
 
   });
+
+  it("On-chain Verify Pomp Membership", async function () {
+    // re-construct merkle tree offline
+    const group = new Group(0, TREE_DEPTH, [sdk.identity.getCommitment()]) // group id --> root
+
+    await sdk.verify(group)
+  });
+
+  it("Query zkSBT", async function () {
+    expect(await sdk.query_sbt(ASSET.ETH, RANGE.RANGE_100)).eq(true)
+  });
+
 });

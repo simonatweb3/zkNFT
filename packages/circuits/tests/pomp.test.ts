@@ -70,14 +70,15 @@ function unpackProof(proof: Proof): SnarkJSProof {
 export default async function generateProof(
     identity : Identity,
     externalNullifier: BytesLike | Hexable | number | bigint,
-    zksbt : bigint,
+    //zksbt : bigint,
     group: Group,
     wasmFile : string,
     zkeyFile : string
 ): Promise<FullProof> {
     console.log(new Date().toUTCString() + " generateProof for wasm : ", wasmFile, ", zkey : ", zkeyFile)
 
-    const pomp_commitment = poseidon2([identity.getCommitment(), zksbt])
+    //const pomp_commitment = poseidon2([identity.getCommitment(), zksbt])
+    const pomp_commitment = identity.getCommitment()
     const merkleProof: MerkleProof = group.generateMerkleProof(group.indexOf(pomp_commitment))
 
     const { proof, publicSignals } = await snarkjs.groth16.fullProve(
@@ -86,8 +87,8 @@ export default async function generateProof(
             identityNullifier: identity.getNullifier(),
             treePathIndices: merkleProof.pathIndices,
             treeSiblings: merkleProof.siblings,
-            externalNullifier: hash(externalNullifier),
-            zksbt : zksbt
+            externalNullifier: hash(externalNullifier)
+            //zksbt : zksbt
         },
         wasmFile,
         zkeyFile
@@ -113,16 +114,17 @@ async function test() {
     )
 
     // 2/3. add identity to group
-    const zksbt = BigInt(5678)
-    const pomp_commitment = poseidon2([identity.getCommitment(), zksbt])
-    const group = new Group(123, TREE_DEPTH, [pomp_commitment])
+    // const zksbt = BigInt(5678)
+    // const pomp_commitment = poseidon2([identity.getCommitment(), zksbt])
+    // const group = new Group(123, TREE_DEPTH, [pomp_commitment])
+    const group = new Group(123, TREE_DEPTH, [identity.getCommitment()])
 
     // 3/3. generate witness, prove, verify
     const externalNullifier = "1234"
     const proof =  await generateProof(
         identity,
         externalNullifier,
-        zksbt,
+        //zksbt,
         group,
         get_circuit_wasm_file("pomp"),
         get_circuit_zkey_file("pomp").growth16
@@ -145,7 +147,7 @@ async function test() {
     )).eq(true)
 
     //let solidityGroupProof: SolidityProof = packToSolidityProof(groupProof.proof)
-
+    console.log("circuit test DONE!")
 }
 
 test()

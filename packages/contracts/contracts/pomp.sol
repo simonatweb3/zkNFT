@@ -44,6 +44,9 @@ contract Pomp is SemaphoreGroups, Ownable {
 
   mapping(uint256 => IVerifier) internal verifiers;
 
+  event SbtMinted(uint indexed identity, uint asset, uint range);
+  mapping(uint => mapping(uint => mapping(uint => bool))) public sbt_minted;
+
   constructor(
     IVerifier _verifier,
     uint poolDepth
@@ -84,7 +87,11 @@ contract Pomp is SemaphoreGroups, Ownable {
   ) public onlyOwner {
     for (uint256 idx = 0; idx < identity.length; idx++) {
       _addMember(pools[asset][range].id, identity[idx]);
+
+      sbt_minted[asset][range][identity[idx]] = true;
+      emit SbtMinted(identity[idx], asset, range);
       // TODO : mint sbt[sbt_id] = identity ?
+
     }
   }
 

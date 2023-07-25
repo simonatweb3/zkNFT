@@ -4,7 +4,6 @@ import { Identity } from "@semaphore-protocol/identity"
 import {BigNumberish, Proof, SnarkJSProof } from "@semaphore-protocol/proof"
 // import packProof from "@semaphore-protocol/proof/src/packProof"
 // import unpackProof from "@semaphore-protocol/proof/src/unpackProof"
-import { poseidon2 } from "poseidon-lite/poseidon2"
 import { BytesLike, Hexable } from "@ethersproject/bytes"
 import { BigNumber } from "@ethersproject/bignumber"
 const snarkjs = require('snarkjs');
@@ -49,14 +48,13 @@ export function unpackProof(proof: Proof): SnarkJSProof {
 export async function generateProof(
   identity : Identity,
   externalNullifier: BytesLike | Hexable | number | bigint,
-  zksbt : bigint,
   group: Group,
   wasmFile : string,
   zkeyFile : string
 ): Promise<FullProof> {
   console.log(new Date().toUTCString() + " generateProof for wasm : ", wasmFile, ", zkey : ", zkeyFile)
 
-  const pomp_commitment = poseidon2([identity.getCommitment(), zksbt])
+  const pomp_commitment = identity.getCommitment()
   const merkleProof: MerkleProof = group.generateMerkleProof(group.indexOf(pomp_commitment))
 
   const { proof, publicSignals } = await snarkjs.groth16.fullProve(
@@ -66,8 +64,7 @@ export async function generateProof(
       treePathIndices: merkleProof.pathIndices,
       treeSiblings: merkleProof.siblings,
       //externalNullifier: hash(externalNullifier),
-      externalNullifier: externalNullifier,
-      zksbt : zksbt
+      externalNullifier: externalNullifier
     },
     wasmFile,
     zkeyFile

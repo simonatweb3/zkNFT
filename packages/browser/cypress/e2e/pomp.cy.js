@@ -3,6 +3,8 @@ describe('Navigation', () => {
       // Start from the index page
       cy.visit('http://localhost:3000/')
       //cy.visit('/')
+
+      cy.get('div').contains('Pomp id :')
    
     //   // Find a link with an href attribute containing "about" and click it
     //   cy.get('a[href*="about"]').click()
