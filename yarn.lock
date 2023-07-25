@@ -1316,7 +1316,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@pomp-eth/circuits@workspace:packages/circuits":
+"@pomp-eth/circuits@0.0.1, @pomp-eth/circuits@workspace:packages/circuits":
   version: 0.0.0-use.local
   resolution: "@pomp-eth/circuits@workspace:packages/circuits"
   dependencies:
@@ -1342,14 +1342,14 @@ __metadata:
     "@nomicfoundation/hardhat-toolbox": ^3.0.0
     "@nomicfoundation/hardhat-verify": ^1.0.0
     "@openzeppelin/contracts": ^4.9.2
+    "@pomp-eth/circuits": 0.0.1
     "@semaphore-protocol/contracts": ^3.10.1
     "@typechain/ethers-v6": ^0.4.0
     "@typechain/hardhat": ^8.0.0
-    "@types/mocha": ^9.1.0
-    chai: ^4.3.7
+    "@types/mocha": ">=9.1.0"
     circomlibjs: ^0.1.7
-    eslint: 8.45.0
-    ethers: ^6.6.4
+    eslint: ^8.45.0
+    ethers: ^6.6.2
     hardhat: ^2.16.1
     hardhat-gas-reporter: ^1.0.8
     solhint: ^3.4.1
@@ -1807,10 +1807,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/mocha@npm:^9.1.0":
-  version: 9.1.1
-  resolution: "@types/mocha@npm:9.1.1"
-  checksum: 516077c0acd9806dc78317f88aaac0df5aaf0bdc2f63dfdadeabdf0b0137953b6ca65472e6ff7c30bc93ce4e0ae76eae70e8d46764b9a8eae4877a928b6ef49a
+"@types/mocha@npm:>=9.1.0":
+  version: 10.0.1
+  resolution: "@types/mocha@npm:10.0.1"
+  checksum: 224ea9fce7b1734ccdb9aa99a622d902a538ce1847bca7fd22c5fb38adcf3ed536f50f48f587085db988a4bb3c2eb68f4b98e1cd6a38bc5547bd3bbbedc54495
   languageName: node
   linkType: hard
 
@@ -4648,7 +4648,7 @@ eslint-config-standard-with-typescript@latest:
   languageName: node
   linkType: hard
 
-"eslint@npm:8.45.0, eslint@npm:^8.0.1, eslint@npm:^8.45.0":
+"eslint@npm:^8.0.1, eslint@npm:^8.45.0":
   version: 8.45.0
   resolution: "eslint@npm:8.45.0"
   dependencies:
@@ -4937,9 +4937,9 @@ eslint-config-standard-with-typescript@latest:
   languageName: node
   linkType: hard
 
-"ethers@npm:^6.6.4":
-  version: 6.6.4
-  resolution: "ethers@npm:6.6.4"
+"ethers@npm:^6.6.2":
+  version: 6.6.5
+  resolution: "ethers@npm:6.6.5"
   dependencies:
     "@adraffy/ens-normalize": 1.9.2
     "@noble/hashes": 1.1.2
@@ -4948,7 +4948,7 @@ eslint-config-standard-with-typescript@latest:
     aes-js: 4.0.0-beta.5
     tslib: 2.4.0
     ws: 8.5.0
-  checksum: 7d44ff29c0285dedbc09f715bd79827313ccc731f97b40ead810a87f44b998bb7e0ab194eb4e317bcc4640165fd4479af05da00bd3b40798956b1b90a32d8ef7
+  checksum: fd00df64876092db2474b80ec3f8a57baae93813da60425a91ec635757888701424f6596f00f6c3b146e41160f682fe047c26f6d4bfb3c213c9378e37826cbae
   languageName: node
   linkType: hard
 
