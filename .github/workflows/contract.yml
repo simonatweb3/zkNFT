@@ -41,7 +41,10 @@ jobs:
       - name: Install dependencies
         run: yarn
 
-      - name: Compile contract packages
+      - name: Build JSSDK Depandancy
+        run: cd packages/jssdk; yarn build; cd -;
+
+      - name: Build Contracts
         run: cd packages/contracts; yarn build; cd -;
 
       - name: Run all unit tests
