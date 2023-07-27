@@ -5,13 +5,16 @@ import * as snarkjs from "snarkjs"
 import { expect } from "chai";
 
 // browser compatible 
-import { Pomp, PompVerifier, PompVerifier__factory, Pomp__factory, PoseidonT3__factory } from "../typechain-types";
+import { Pomp, PompVerifier, PompVerifier__factory, Pomp__factory, PoseidonT3__factory, ZkSBT } from "../typechain-types";
 import { ASSET, generateProof, hash, PompSdk, RANGE, TREE_DEPTH, unpackProof } from "@pomp-eth/jssdk"
 import * as circomlibjs from "circomlibjs"
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { Group } from "@semaphore-protocol/group"
 import { dnld_aws, P0X_DIR } from "./utility";
 import { resolve } from "path";
+import { deployContracts } from "./fixtures/deployContracts";
+import { Wallet } from "ethers";
+
 
 describe("Pomp", function () {
   this.timeout(6000000);
@@ -19,6 +22,9 @@ describe("Pomp", function () {
   let signers: SignerWithAddress;
   let pc : Pomp
   let sdk : PompSdk
+  let ownerOfZkSbtContract: Wallet;
+  let zkSBT : ZkSBT
+
   before(async () => {
     signers = await ethers.getSigners();
     owner = signers[0];   // TODO : why not 10
@@ -34,6 +40,10 @@ describe("Pomp", function () {
   });
 
   it("Deploy", async function () {
+    // deploy zkSBT contract
+    const fixtures = await deployContracts()
+    ownerOfZkSbtContract = fixtures.ownerOfZkSbtContract
+    zkSBT = fixtures.zkSBT
 
     // deploy contract : poseidon(2)
     const NINPUT = 2
@@ -64,8 +74,11 @@ describe("Pomp", function () {
       }
     })
 
-    pc = await ContractFactory.deploy(await v.getAddress(), 10)
+    pc = await ContractFactory.deploy(await v.getAddress(), 10, zkSBT.getAddress())
     console.log("POMP : ", await pc.getAddress())
+
+    // approve pomp to operate zkSBT
+    await zkSBT.connect(ownerOfZkSbtContract).setOperator(pc.getAddress(),true)
   });
 
   it("Create Pomp SDK", async function () {
@@ -85,7 +98,7 @@ describe("Pomp", function () {
   // });
 
   it("Mint Pomp", async function () {
-    await sdk.mint(ASSET.ETH, RANGE.RANGE_100)
+    await sdk.mint(ASSET.ETH, RANGE.RANGE_100,"1")
   });
 
   it("Off-chain Verify Pomp Membership", async function () {
