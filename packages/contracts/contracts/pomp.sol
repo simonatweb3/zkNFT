@@ -82,14 +82,17 @@ contract Pomp is SemaphoreGroups, Ownable {
   function mint(
     uint[] calldata identity,
     uint asset,
-    uint range
+    uint range,
+    uint sbtId,
+    bytes memory data
   ) public onlyOwner {
     for (uint256 idx = 0; idx < identity.length; idx++) {
       _addMember(pools[asset][range].id, identity[idx]);
 
       sbt_minted[asset][range][identity[idx]] = true;
       emit SbtMinted(identity[idx], asset, range);
-      // TODO : mint sbt[sbt_id] = identity ?
+
+      ZkSbt.mintWithSbtId(identity[idx], asset, range, sbtId, data);
     }
   }
 
