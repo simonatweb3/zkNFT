@@ -10,10 +10,6 @@ export async function deployContracts() {
   const operatorOfZkSbtContract = new ethers.Wallet(randomHex(32), provider);
   const user_1 = new ethers.Wallet(randomHex(32), provider);
   const user_2 = new ethers.Wallet(randomHex(32), provider);
-  const MockPompAddress = new ethers.Wallet(
-    randomHex(32),
-    provider
-  ).getAddress();
 
   await faucet(ownerOfZkSbtContract.address, provider);
   await faucet(operatorOfZkSbtContract.address, provider);
@@ -26,7 +22,7 @@ export async function deployContracts() {
     ownerOfZkSbtContract
   );
 
-  const zkSBT = await ZkSBTFactory.deploy(MockPompAddress);
+  const zkSBT = await ZkSBTFactory.deploy();
 
   return {
     ownerOfZkSbtContract,
