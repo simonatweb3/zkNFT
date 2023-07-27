@@ -43,16 +43,12 @@ describe("Pomp", function () {
   });
 
   it("Deploy", async function () {
-    pc = await deploy(owner)
-    
     // deploy zkSBT contract
     const fixtures = await deployContracts()
     ownerOfZkSbtContract = fixtures.ownerOfZkSbtContract
     zkSBT = fixtures.zkSBT
 
-    // approve pomp to operate zkSBT
-    await zkSBT.connect(ownerOfZkSbtContract).setOperator(pc.getAddress(),true)
-
+    pc = await deploy(owner, await zkSBT.getAddress())
 
     // approve pomp to operate zkSBT
     await zkSBT.connect(ownerOfZkSbtContract).setOperator(pc.getAddress(),true)
