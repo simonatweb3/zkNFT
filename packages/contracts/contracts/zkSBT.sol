@@ -14,9 +14,6 @@ contract ZkSBT is ERC721URIStorage, Ownable {
   // zkAddress => identityCommitment, to check potential collision
   mapping(address => uint256) public zkAddressPreImage;
 
-  // address of pomp, stores corresponding Merkle tree;
-  address public pomp;
-
   string public baseUri;
 
   event OperatorChange(address indexed _operator, bool indexed _allowed);
@@ -44,9 +41,7 @@ contract ZkSBT is ERC721URIStorage, Ownable {
     uint256 range;
   }
 
-  constructor(address _pomp) ERC721("ZkSBT", "ZkSBT") {
-    pomp = _pomp;
-  }
+  constructor() ERC721("ZkSBT", "ZkSBT") {}
 
   // override _transfer to prevent SBT from being transferred
   function _transfer(
