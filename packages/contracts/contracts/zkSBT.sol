@@ -1,4 +1,3 @@
-// contracts/GameItem.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
@@ -89,7 +88,7 @@ contract ZkSBT is ERC721URIStorage, Ownable {
         uint256 sbtId, //sbt id in the per sbt identity
         RANGE range,
         bytes memory data
-    ) public onlyOperator {
+    ) public onlyOperator returns (bool) {
         // check identityCommitment is not 0
         require(identityCommitment != 0, "invalid identityCommitment");
 
@@ -126,6 +125,7 @@ contract ZkSBT is ERC721URIStorage, Ownable {
             range,
             data
         );
+        return true;
     }
 
     // check whether zkAddresses have collision
