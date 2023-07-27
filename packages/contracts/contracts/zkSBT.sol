@@ -27,8 +27,7 @@ contract ZkSBT is ERC721URIStorage, Ownable {
     uint256 indexed _identityCommitment,
     uint256 indexed asset,
     uint256 indexed tokkenId,
-    uint256 range,
-    bytes data
+    uint256 range
   );
 
   modifier onlyOperator() {
@@ -43,7 +42,6 @@ contract ZkSBT is ERC721URIStorage, Ownable {
   struct MetaData {
     uint256 asset; // used to distinguish different asset
     uint256 range;
-    bytes data;
   }
 
   constructor(address _pomp) ERC721("ZkSBT", "ZkSBT") {
@@ -66,8 +64,7 @@ contract ZkSBT is ERC721URIStorage, Ownable {
     uint256 identityCommitment, //record identity commitment of user
     uint256 asset, //asset type, which is enumeration
     uint256 range,
-    uint256 sbtId, //sbt id in the per sbt identity
-    bytes memory data
+    uint256 sbtId //sbt id in the per sbt identity
   ) public onlyOperator returns (bool) {
     // check identityCommitment is not 0
     require(identityCommitment != 0, "invalid identityCommitment");
@@ -84,9 +81,9 @@ contract ZkSBT is ERC721URIStorage, Ownable {
     // mint sbt
     _safeMint(zkAddress, tokenId);
 
-    sbtMetaData[tokenId] = MetaData(asset, range, data);
+    sbtMetaData[tokenId] = MetaData(asset, range);
 
-    emit MintZkSBT(identityCommitment, asset, tokenId, range, data);
+    emit MintZkSBT(identityCommitment, asset, tokenId, range);
     return true;
   }
 
