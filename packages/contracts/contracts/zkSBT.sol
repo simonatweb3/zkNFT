@@ -26,8 +26,8 @@ contract ZkSBT is ERC721URIStorage, Ownable {
   event MintZkSBT(
     uint256 indexed _identityCommitment,
     uint256 indexed asset,
-    uint256 indexed tokkenId,
-    uint256 range
+    uint256 range,
+    uint256 indexed tokenId
   );
 
   modifier onlyOperator() {
@@ -83,7 +83,7 @@ contract ZkSBT is ERC721URIStorage, Ownable {
 
     sbtMetaData[tokenId] = MetaData(asset, range);
 
-    emit MintZkSBT(identityCommitment, asset, tokenId, range);
+    emit MintZkSBT(identityCommitment, asset, range, tokenId);
     return true;
   }
 
