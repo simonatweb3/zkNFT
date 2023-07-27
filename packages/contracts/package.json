@@ -8,6 +8,8 @@
     "lint:ts": "eslint .",
     "lint": "yarn lint:sol; yarn lint:ts",
     "build": "yarn lint:sol && hardhat compile",
+    "deploy": "DEPLOY_NPO=1 hardhat test test/deploy.ts",
+    "verify": "hardhat verify",
     "test": "hardhat compile && hardhat test"
   },
   "dependencies": {
