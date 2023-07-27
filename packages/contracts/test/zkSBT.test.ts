@@ -70,94 +70,18 @@ describe("ZkSBT basic test", async function () {
         .withArgs(operatorOfZkSbtContract.address, true);
     });
   });
-  describe("setMintIdStatus", async () => {
-    const mintId = 1;
-
-    it("set mintId status to true", async () => {
-      await expect(await zkSBT.mintIdStatus(mintId)).to.equal(false);
-
-      await zkSBT.connect(ownerOfZkSbtContract).setMintIdStatus(mintId, true);
-
-      await expect(await zkSBT.mintIdStatus(mintId)).to.equal(true);
-    });
-
-    it("set mintId status to false", async () => {
-      await expect(await zkSBT.mintIdStatus(mintId)).to.equal(true);
-
-      await zkSBT.setMintIdStatus(mintId, false);
-
-      await expect(await zkSBT.mintIdStatus(mintId)).to.equal(false);
-    });
-
-    it("only operator of zkSBT contract can set mindId status", async () => {
-      await expect(
-        zkSBT.connect(user_1).setMintIdStatus(2, true)
-      ).to.be.revertedWith("caller is not operator");
-    });
-
-    it("set mintId status, emit event MintIdStatusChange", async () => {
-      await expect(
-        zkSBT.connect(operatorOfZkSbtContract).setMintIdStatus(2, true)
-      )
-        .to.emit(zkSBT, "MintIdStatusChange")
-        .withArgs(2, true);
-    });
-  });
 
   describe("mint", async () => {
-    this.beforeAll(async () => {
-      await zkSBT.connect(ownerOfZkSbtContract).setMintIdStatus(2, true);
-    });
-
     it("only operaor can mintWithSbtId", async () => {
       await expect(
-        zkSBT
-          .connect(user_2)
-          .mintWithSbtId(
-            1,
-            2,
-            1,
-            ethers.ZeroAddress,
-            1,
-            1,
-            1,
-            ethers.toUtf8Bytes("")
-          )
+        zkSBT.connect(user_2).mintWithSbtId(1, 2, 1, 1)
       ).to.be.revertedWith("caller is not operator");
     });
 
     it("identityCommitment can't be zero", async () => {
       await expect(
-        zkSBT
-          .connect(operatorOfZkSbtContract)
-          .mintWithSbtId(
-            0,
-            2,
-            1,
-            ethers.ZeroAddress,
-            1,
-            1,
-            1,
-            ethers.toUtf8Bytes("")
-          )
+        zkSBT.connect(operatorOfZkSbtContract).mintWithSbtId(0, 2, 1, 1)
       ).to.be.revertedWith("invalid identityCommitment");
-    });
-
-    it("only opened mintId", async () => {
-      await expect(
-        zkSBT
-          .connect(operatorOfZkSbtContract)
-          .mintWithSbtId(
-            1,
-            3,
-            1,
-            ethers.ZeroAddress,
-            1,
-            1,
-            1,
-            ethers.toUtf8Bytes("")
-          )
-      ).to.be.revertedWith("mintId not available");
     });
 
     it("zkAddress can't collide", async () => {
@@ -167,11 +91,7 @@ describe("ZkSBT basic test", async function () {
           ethers.toBigInt("0b" + "0" + "1".padStart(255, "0")).toString(),
           2,
           1,
-          ethers.ZeroAddress,
-          1,
-          1,
-          1,
-          ethers.toUtf8Bytes("")
+          1
         );
 
       await expect(
@@ -181,42 +101,16 @@ describe("ZkSBT basic test", async function () {
             ethers.toBigInt("0b" + "1" + "1".padStart(255, "0")).toString(),
             2,
             1,
-            ethers.ZeroAddress,
-            1,
-            1,
-            1,
-            ethers.toUtf8Bytes("")
+            2
           )
       ).to.rejectedWith("collision of zkAddress");
     });
 
     it("can't mint same SBT twice", async () => {
-      await zkSBT
-        .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(
-          1,
-          2,
-          1,
-          ethers.ZeroAddress,
-          1,
-          2,
-          1,
-          ethers.toUtf8Bytes("")
-        );
+      await zkSBT.connect(operatorOfZkSbtContract).mintWithSbtId(1, 2, 1, 3);
 
       await expect(
-        zkSBT
-          .connect(operatorOfZkSbtContract)
-          .mintWithSbtId(
-            2,
-            2,
-            1,
-            ethers.ZeroAddress,
-            1,
-            2,
-            1,
-            ethers.toUtf8Bytes("")
-          )
+        zkSBT.connect(operatorOfZkSbtContract).mintWithSbtId(2, 2, 1, 3)
       ).to.revertedWith("ERC721: token already minted");
     });
 
@@ -224,20 +118,15 @@ describe("ZkSBT basic test", async function () {
       const { identityCommitment, zkAddress } =
         generateRandomIdentityCommitment();
 
+      const asset = 2;
+      const range = 1;
+      const sbtId = 4;
+
       await zkSBT
         .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(
-          identityCommitment,
-          2,
-          1,
-          ethers.ZeroAddress,
-          1,
-          3,
-          1,
-          ethers.toUtf8Bytes("")
-        );
+        .mintWithSbtId(identityCommitment, asset, range, sbtId);
 
-      await expect(await zkSBT.ownerOf(3)).to.equal(
+      await expect(await zkSBT.ownerOf(sbtId)).to.equal(
         ethers.getAddress(zkAddress)
       );
     });
@@ -246,36 +135,17 @@ describe("ZkSBT basic test", async function () {
       const { identityCommitment, zkAddress } =
         generateRandomIdentityCommitment();
 
-      const mintId = 2;
-      const chainId = 1;
-      const assetContractAddress = ethers.ZeroAddress;
-      const assetTokenId = 1;
-      const sbtId = 4;
+      const asset = 2;
       const range = 1;
-      const data = ethers.toUtf8Bytes("hello, zkSBT");
+      const sbtId = 5;
 
       await zkSBT
         .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(
-          identityCommitment,
-          mintId,
-          chainId,
-          assetContractAddress,
-          assetTokenId,
-          sbtId,
-          range,
-          data
-        );
+        .mintWithSbtId(identityCommitment, asset, range, sbtId);
 
-      const metadata = await zkSBT.sbtMetaData(4);
-      expect(metadata[0].toString()).to.equal(mintId.toString());
-      expect(metadata[1].toString()).to.equal(chainId.toString());
-      expect(metadata[2].toString()).to.equal(assetContractAddress.toString());
-      expect(metadata[3].toString()).to.equal(assetTokenId.toString());
-      expect(metadata[4].toString()).to.equal(range.toString());
-      expect(metadata[5].toString()).to.equal(
-        ethers.hexlify(ethers.toUtf8Bytes("hello, zkSBT"))
-      );
+      const metadata = await zkSBT.sbtMetaData(5);
+      expect(metadata[0].toString()).to.equal(asset.toString());
+      expect(metadata[1].toString()).to.equal(range.toString());
     });
   });
   describe("Token uri", async () => {
@@ -291,57 +161,35 @@ describe("ZkSBT basic test", async function () {
       const { identityCommitment, zkAddress } =
         generateRandomIdentityCommitment();
 
-      const mintId = 2;
-      const chainId = 1;
-      const assetContractAddress = ethers.ZeroAddress;
-      const assetTokenId = 1;
-      const sbtId = 5;
+      const asset = 2;
       const range = 1;
-      const data = ethers.toUtf8Bytes("");
+      const sbtId = 6;
 
       await zkSBT
         .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(
-          identityCommitment,
-          mintId,
-          chainId,
-          assetContractAddress,
-          assetTokenId,
-          sbtId,
-          range,
-          data
-        );
+        .mintWithSbtId(identityCommitment, asset, range, sbtId);
 
-      await expect(await zkSBT.tokenURI(5)).to.equal(baseUri + "5");
+      await expect(await zkSBT.tokenURI(sbtId)).to.equal(
+        baseUri + sbtId.toString()
+      );
     });
   });
   describe("SBT", async () => {
     it("SBT can't be transferred", async () => {
-      const mintId = 2;
-      const chainId = 1;
-      const assetContractAddress = ethers.ZeroAddress;
-      const assetTokenId = 1;
-      const sbtId = 6;
+      const asset = 2;
       const range = 1;
-      const data = ethers.toUtf8Bytes("hello, zkSBT");
+      const sbtId = 7;
 
       await zkSBT
         .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(
-          user_2.address,
-          mintId,
-          chainId,
-          assetContractAddress,
-          assetTokenId,
-          sbtId,
-          range,
-          data
-        );
+        .mintWithSbtId(user_2.address, asset, range, sbtId);
 
-      await expect(await zkSBT.ownerOf(6)).to.equal(user_2.address);
+      await expect(await zkSBT.ownerOf(sbtId)).to.equal(user_2.address);
 
       await expect(
-        zkSBT.connect(user_2).transferFrom(user_2.address, user_1.address, 6)
+        zkSBT
+          .connect(user_2)
+          .transferFrom(user_2.address, user_1.address, sbtId)
       ).to.revertedWith("SBT can't be transferred");
     });
   });
