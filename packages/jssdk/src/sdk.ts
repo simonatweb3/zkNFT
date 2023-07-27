@@ -24,7 +24,7 @@ export enum RANGE {
 }
 
 interface IPomp {
-  mint: (asset: number, range: number) => Promise<number>;
+  mint: (asset: number, range: number, sbtId: string) => Promise<number>;
   // allocate_asset_id
 }
 
@@ -76,10 +76,10 @@ export class PompSdk implements IPomp {
   }
 
   // mint(user tx / server tx) a sbt on-chain (sbt[asset_id] = identity), generate a proof key for backend. 
-  public async mint(asset : ASSET, range : RANGE) {
-    console.log("mint pomp for asset ", asset, " range ", range)
+  public async mint(asset : ASSET, range : RANGE, sbtId : string) {
+    console.log("mint pomp for asset ", asset, " range ", range, " sbtId ", sbtId)
 
-    return await (await this.pc.mint([this.identity.getCommitment()], asset, range)).wait()
+    return await (await this.pc.mint([this.identity.getCommitment()], asset, range, sbtId)).wait()
   }
 
   public async verify(
