@@ -55,7 +55,7 @@ contract Pomp is SemaphoreGroups, Ownable {
 
   mapping(uint => mapping(uint => mapping(uint => bool))) public sbt_minted;
 
-  constructor(IVerifier _verifier, uint poolDepth) Ownable() {
+  constructor(IVerifier _verifier, uint poolDepth, ZkSbtInterface _ZkSbt) Ownable() {
     // pomp verifier
     verifiers[poolDepth] = _verifier;
 
@@ -63,6 +63,8 @@ contract Pomp is SemaphoreGroups, Ownable {
     latestPoolId = 0;
     createPompPool(uint(ASSET.ETH), uint(RANGE.RANGE_100), poolDepth);
     createPompPool(uint(ASSET.BNB), uint(RANGE.RANGE_100), poolDepth);
+
+    ZkSbt = _ZkSbt;
   }
 
   function createPompPool(uint asset, uint range, uint poolDepth) internal {
