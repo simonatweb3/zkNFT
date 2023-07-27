@@ -3,6 +3,7 @@ pragma solidity >=0.7.0 <0.9.0;
 
 import "@semaphore-protocol/contracts/base/SemaphoreGroups.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./interface/zkSbtInterface.sol";
 
 interface IVerifier {
   function verifyProof(
@@ -21,6 +22,7 @@ struct Pool {
 contract Pomp is SemaphoreGroups, Ownable {
   uint constant POMP_POOL_DEPTH = 10;
   uint public latestPoolId;
+  ZkSbtInterface public ZkSbt;
 
   enum ASSET {
     ETH,
@@ -45,6 +47,12 @@ contract Pomp is SemaphoreGroups, Ownable {
   mapping(uint256 => IVerifier) internal verifiers;
 
   event SbtMinted(uint indexed identity, uint asset, uint range);
+
+  event ZkSbtAddressChange(
+    address indexed oldAddress,
+    address indexed newAddress
+  );
+
   mapping(uint => mapping(uint => mapping(uint => bool))) public sbt_minted;
 
   constructor(IVerifier _verifier, uint poolDepth) Ownable() {
@@ -111,5 +119,11 @@ contract Pomp is SemaphoreGroups, Ownable {
     require(valid, "proof invalid!");
 
     // random change salts[asset][range]?
+  }
+
+  function setZkSbtAddress(address _newZkSbtAddress) public onlyOwner {
+    address oldZkSbtAddress = address(ZkSbt);
+    ZkSbt = ZkSbtInterface(_newZkSbtAddress);
+    emit ZkSbtAddressChange(oldZkSbtAddress, _newZkSbtAddress);
   }
 }
