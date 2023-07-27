@@ -11,9 +11,6 @@ contract ZkSBT is ERC721URIStorage, Ownable {
   // sbt tokenId => sbt's metaData
   mapping(uint256 => MetaData) public sbtMetaData;
 
-  // mintId status
-  mapping(uint256 => bool) public mintIdStatus;
-
   // zkAddress => identityCommitment, to check potential collision
   mapping(address => uint256) public zkAddressPreImage;
 
@@ -28,11 +25,9 @@ contract ZkSBT is ERC721URIStorage, Ownable {
 
   event MintZkSBT(
     uint256 indexed _identityCommitment,
-    uint256 indexed _mintId,
-    uint256 indexed _chainId,
-    address _assetContractAddress,
-    uint256 _assetTokenId,
-    RANGE range,
+    uint256 indexed asset,
+    uint256 indexed tokkenId,
+    uint256 range,
     bytes data
   );
 
@@ -44,22 +39,10 @@ contract ZkSBT is ERC721URIStorage, Ownable {
     _;
   }
 
-  // asset amount range
-  enum RANGE {
-    RANGE_0, // >0
-    RANGE_1_10, // 1~10
-    RANGE_10_100, // 10~100
-    RANGE_100 // >100
-  }
-
   // metadata of SBT
   struct MetaData {
-    // used to distinguish different mint batch
-    uint256 mintId;
-    uint256 chainId;
-    address assetContractAddress;
-    uint256 assetTokenId;
-    RANGE range;
+    uint256 asset; // used to distinguish different asset
+    uint256 range;
     bytes data;
   }
 
@@ -81,19 +64,13 @@ contract ZkSBT is ERC721URIStorage, Ownable {
 
   function mintWithSbtId(
     uint256 identityCommitment, //record identity commitment of user
-    uint256 mintId, //mint id
-    uint256 chainId, // chainId of the asset
-    address assetContractAddress, //asset contract address
-    uint256 assetTokenId, //asset token id
+    uint256 asset, //asset type, which is enumeration
+    uint256 range,
     uint256 sbtId, //sbt id in the per sbt identity
-    RANGE range,
     bytes memory data
   ) public onlyOperator returns (bool) {
     // check identityCommitment is not 0
     require(identityCommitment != 0, "invalid identityCommitment");
-
-    // check mintId is open
-    require(mintIdStatus[mintId], "mintId not available");
 
     // the tokenId to be minted i sbtId
     uint256 tokenId = sbtId;
@@ -107,24 +84,9 @@ contract ZkSBT is ERC721URIStorage, Ownable {
     // mint sbt
     _safeMint(zkAddress, tokenId);
 
-    sbtMetaData[tokenId] = MetaData(
-      mintId,
-      chainId,
-      assetContractAddress,
-      assetTokenId,
-      range,
-      data
-    );
+    sbtMetaData[tokenId] = MetaData(asset, range, data);
 
-    emit MintZkSBT(
-      identityCommitment,
-      mintId,
-      chainId,
-      assetContractAddress,
-      tokenId,
-      range,
-      data
-    );
+    emit MintZkSBT(identityCommitment, asset, tokenId, range, data);
     return true;
   }
 
@@ -154,19 +116,6 @@ contract ZkSBT is ERC721URIStorage, Ownable {
   ) public virtual onlyOwner {
     operators[operator] = approved;
     emit OperatorChange(operator, approved);
-  }
-
-  /**
-   * @dev set status of mintId
-   *
-   * Emits an {ApprovalForAll} event.
-   */
-  function setMintIdStatus(
-    uint256 _mintId,
-    bool _open
-  ) public virtual onlyOperator {
-    mintIdStatus[_mintId] = _open;
-    emit MintIdStatusChange(_mintId, _open);
   }
 
   /**
