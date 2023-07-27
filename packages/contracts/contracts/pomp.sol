@@ -46,7 +46,7 @@ contract Pomp is SemaphoreGroups, Ownable {
 
   mapping(uint256 => IVerifier) internal verifiers;
 
-  event SbtMinted(uint indexed identity, uint asset, uint range);
+  event SbtMinted(uint indexed identity, uint asset, uint range, uint sbtId);
 
   event ZkSbtAddressChange(
     address indexed oldAddress,
@@ -93,7 +93,7 @@ contract Pomp is SemaphoreGroups, Ownable {
       bool success = ZkSbt.mintWithSbtId(identity[idx], asset, range, sbtId);
       require(success, "failed to mint zkSBT");
 
-      emit SbtMinted(identity[idx], asset, range);
+      emit SbtMinted(identity[idx], asset, range, sbtId);
     }
   }
 
