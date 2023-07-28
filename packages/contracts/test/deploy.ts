@@ -8,6 +8,7 @@ import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 export async function deploy(
   owner : SignerWithAddress,
+  ZkSbt : string,
 ) {
     // deploy contract : poseidon(2)
     const NINPUT = 2
@@ -39,7 +40,7 @@ export async function deploy(
       }
     })
 
-    const pc = await ContractFactory.deploy(await v.getAddress(), 10, {gasLimit : 10000000})
+    const pc = await ContractFactory.deploy(await v.getAddress(), 10, ZkSbt, {gasLimit : 10000000})
     console.log("POMP : ", await pc.getAddress())
     return pc
 }
