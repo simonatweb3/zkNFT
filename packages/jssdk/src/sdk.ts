@@ -4,28 +4,13 @@ import { Group } from "@semaphore-protocol/group"
 //import * as pompJson from "./ABI/Pomp.json"
 import pompJson from "./ABI/Pomp.json"
 import { generateProof } from "./proof"
-
-export type FileType = any;
-export const POMP_KEY_SIGN_MESSAGE =
-  "Sign this message to generate your Pomp Privacy Key. This key lets the application decrypt your identity on Pomp.\n\nIMPORTANT: Only sign this message if you trust the application.";
-export const TREE_DEPTH = 10
-
-export enum ASSET {
-  ETH,
-  BNB
-  // upgradeable
-}
-
-export enum RANGE {
-    RANGE_0,       // >0, ignore?
-    RANGE_1_10,    // 1~10
-    RANGE_10_100,  // 10~100
-    RANGE_100      // >100
-}
+import { PompBackend } from "./backend"
+import { ASSET, claim_sbt_message, FileType, pomp2sbt, POMP_CLAIM_MESSAGE, POMP_KEY_SIGN_MESSAGE, RANGE, SBT } from "./common"
 
 interface IPomp {
+  getPublicAddress() : bigint;
   mint: (asset: number, range: number, sbtId: string) => Promise<number>;
-  // allocate_asset_id
+  getProofKey : (group : Group, asset : number, range : number) => Promise<string>;
 }
 
 export class PompSdk implements IPomp {
@@ -36,6 +21,10 @@ export class PompSdk implements IPomp {
   identity: Identity
   // on-chain merkle trees
 
+
+  // TODO : backend
+  backend : PompBackend
+
   private constructor(
     pompContract: string,
     signer: Signer,
@@ -44,6 +33,8 @@ export class PompSdk implements IPomp {
     this.signer = signer;
     this.pc = new ethers.Contract(pompContract, pompJson.abi, signer);
     this.identity = identity
+
+    this.backend = new PompBackend(signer);
   }
 
   public static create = async (
@@ -70,16 +61,64 @@ export class PompSdk implements IPomp {
     return new Identity(keysJson)
   }
 
-  // web2 interface :  get the allocated asset_id from backend/on-chain contract
-  public allocate_asset_id() : bigint {
-    return BigInt(5678); // TODO
+  public getPublicAddress() : bigint {
+    return this.identity.getCommitment()
+  }
+
+  public is_eligible(
+    sbt : SBT
+  ) : boolean {
+    return this.backend.is_eligible(sbt);
+  }
+
+  public async claim_sbt_signature(
+    sbt : SBT
+  ) {
+    return await this.signer.signMessage(
+      claim_sbt_message(
+        this.identity.getCommitment().toString(), sbt
+      )
+    );
+  }
+
+  public async get_web2_certificate(
+    sbt : SBT
+  ) {
+    const claim_sbt_signature = await this.claim_sbt_signature(sbt)
+
+    return this.backend.certificate(
+      this.identity.getCommitment(),
+      sbt,
+      claim_sbt_signature
+    );
   }
 
   // mint(user tx / server tx) a sbt on-chain (sbt[asset_id] = identity), generate a proof key for backend. 
   public async mint(asset : ASSET, range : RANGE, sbtId : string) {
     console.log("mint pomp for asset ", asset, " range ", range, " sbtId ", sbtId)
 
-    return await (await this.pc.mint([this.identity.getCommitment()], asset, range, sbtId)).wait()
+    return await (await this.pc.mint([this.identity.getCommitment()], asset, range, sbtId, {gasLimit : 1000000})).wait()
+  }
+
+  public async getProofKey(
+    group : Group,
+    asset : number,
+    range : number
+  ) : Promise<string> {
+    const proof =  await generateProof(
+      this.identity,
+      BigInt(await this.pc.salts(asset,range)),
+      group,
+      this.pomp_wasm,
+      this.pomp_zkey
+    )
+
+    const bytesData = ethers.utils.defaultAbiCoder.encode(
+      ["uint256[8]"],
+      [proof.proof]
+    );
+    
+    return ethers.utils.keccak256(bytesData); 
   }
 
   public async verify(
@@ -112,11 +151,24 @@ export class PompSdk implements IPomp {
 
   // zkSBT List
   public async query_sbt(
-    asset : number,
-    range : number
+    sbt : SBT
   ) {
-    // check SbtMinted event
-    return await this.pc.sbt_minted(asset, range, this.identity.getCommitment())
+    // TODO : check SbtMinted event
+    return await this.pc.sbt_minted(sbt.asset, sbt.range, this.identity.getCommitment())
+  }
+
+  public async query_sbt_list() {
+    let sbt_list: SBT[] = []
+    for(const asset in Object.values(ASSET)) {  // TODO : fix
+      for(const range in Object.values(RANGE)) {
+        //console.log("asset ", asset, " range ", range)
+        const sbt:SBT = pomp2sbt(Number(asset), Number(range))
+        if (await this.query_sbt(sbt)) {
+          sbt_list.push(sbt)
+        }
+      }
+    }
+    return sbt_list
   }
 
 }

@@ -3,6 +3,7 @@ pragma solidity >=0.7.0 <0.9.0;
 
 import "@semaphore-protocol/contracts/base/SemaphoreGroups.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./interface/zkSbtInterface.sol";
 
 interface IVerifier {
@@ -86,8 +87,18 @@ contract Pomp is SemaphoreGroups, Ownable {
     uint asset,
     uint range,
     uint sbtId
-  ) public onlyOwner {
+    //bytes[] calldata certificate_signature
+  ) public onlyOwner {    
     for (uint256 idx = 0; idx < identity.length; idx++) {
+      // verify server's signature.
+      // bytes memory message = bytes.concat(
+      //   "\x19Ethereum Signed Message:\n130",  // 10-th 130
+      //   "0x",
+      //   Bytes.bytesToHexASCIIBytes(orig_msg)
+      // );
+      // address signer = ECDSA.recover(keccak256(message), certificate_signature[idx]);
+      // require(signer == owner, "Invalid Certificate Signature!");
+
       _addMember(pools[asset][range].id, identity[idx]);
 
       sbt_minted[asset][range][identity[idx]] = true;

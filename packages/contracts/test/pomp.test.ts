@@ -6,7 +6,7 @@ import { expect } from "chai";
 
 // browser compatible 
 import { Pomp, PompVerifier, PompVerifier__factory, Pomp__factory, PoseidonT3__factory, ZkSBT } from "../typechain-types";
-import { ASSET, generateProof, hash, PompSdk, RANGE, TREE_DEPTH, unpackProof } from "@pomp-eth/jssdk"
+import { ASSET, generateProof, hash, PompSdk, RANGE, TREE_DEPTH, unpackProof, claim_sbt_message, pomp2sbt, SBT } from "@pomp-eth/jssdk"
 import * as circomlibjs from "circomlibjs"
 import { Group } from "@semaphore-protocol/group"
 import { dnld_aws, P0X_DIR } from "./utility";
@@ -17,6 +17,7 @@ import { Wallet } from "ethers";
 
 import { deploy } from "./deploy";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { exit } from "process";
 
 
 describe("Pomp", function () {
@@ -44,14 +45,13 @@ describe("Pomp", function () {
 
   it("Deploy", async function () {
     // deploy zkSBT contract
-    const fixtures = await deployContracts()
-    ownerOfZkSbtContract = fixtures.ownerOfZkSbtContract
+    const fixtures = await deployContracts(owner)
     zkSBT = fixtures.zkSBT
 
     pc = await deploy(owner, await zkSBT.address)
 
     // approve pomp to operate zkSBT
-    await zkSBT.connect(ownerOfZkSbtContract).setOperator(pc.address,true)
+    await zkSBT.connect(owner).setOperator(pc.address,true)
 
   });
 
@@ -71,8 +71,39 @@ describe("Pomp", function () {
   // it("Create Pomp Pool", async function () {
   // });
 
-  it("Mint Pomp", async function () {
+
+  let sbt : SBT = pomp2sbt(ASSET.ETH, RANGE.RANGE_100)
+  let web2_certificate_signature
+  it("Web2 Certificate", async function () {
+    const claim_sbt_signature = await sdk.claim_sbt_signature(sbt)
+    console.log("claim_sbt_signature : ", claim_sbt_signature)
+	  expect(ethers.utils.verifyMessage(
+      claim_sbt_message(sdk.identity.getCommitment().toString(), sbt),
+      claim_sbt_signature
+    )).eq(owner.address)
+
+    
+    web2_certificate_signature = await sdk.get_web2_certificate(sbt)
+    console.log("web2_certificate_signature : ", web2_certificate_signature.signature)
+    expect(web2_certificate_signature.eligible).eq(true)
+  });
+
+  it("Mint Pomp with certificate signature", async function () {
     await sdk.mint(ASSET.ETH, RANGE.RANGE_100,"1")
+  });
+
+
+  it("Query zkSBT", async function () {
+    // for(const asset in Object.values(ASSET)) {
+    //   console.log("asset : ", asset)
+    // }
+    // for(const range in Object.values(RANGE)) {
+    //   console.log("range : ", range)
+    // }
+    const sbts = await sdk.query_sbt_list()
+    console.log("sbts : ", sbts)
+    expect(sbts[0].asset).eq(sbt.asset)
+    expect(sbts[0].range).eq(sbt.range)
   });
 
   it("Off-chain Verify Pomp Membership", async function () {
@@ -123,8 +154,5 @@ describe("Pomp", function () {
     await sdk.verify(group)
   });
 
-  it("Query zkSBT", async function () {
-    expect(await sdk.query_sbt(ASSET.ETH, RANGE.RANGE_100)).eq(true)
-  });
 
 });
