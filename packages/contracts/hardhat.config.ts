@@ -43,10 +43,17 @@ const config: HardhatUserConfig = {
       url : "https://manta-testnet.calderachain.xyz/http",
       chainId : 3441005,
       accounts: customAccounts
+    },
+    opGoerli : {
+      url : "https://opt-goerli.g.alchemy.com/v2/FR5hJ_14k0N8hhJqnVNM803ymNsq5pOA",
+      chainId : 420,
+      gasPrice : 1000,
+      accounts: customAccounts
     }
   },
   etherscan: {
     apiKey: {
+      opGoerli: "Y5UPE2DNZ3YN14XTDEC6D9H84XJMK7QX77",
       manta: "abc"
     },
     customChains: [
@@ -57,6 +64,14 @@ const config: HardhatUserConfig = {
           apiURL: "https://manta-testnet.calderaexplorer.xyz/api",
           browserURL: "https://manta-testnet.calderaexplorer.xyz/"
         }
+      },
+      {
+        network: "opGoerli",
+        chainId: 420,
+        urls: {
+          apiURL : "https://opt-goerli.g.alchemy.com/v2/FR5hJ_14k0N8hhJqnVNM803ymNsq5pOA",
+          browserURL: "https://optimism-goerli.blockscout.com"
+        },
       }
     ]
   },
