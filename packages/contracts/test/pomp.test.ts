@@ -8,7 +8,6 @@ import { expect } from "chai";
 import { Pomp, PompVerifier, PompVerifier__factory, Pomp__factory, PoseidonT3__factory, ZkSBT } from "../typechain-types";
 import { ASSET, generateProof, hash, PompSdk, RANGE, TREE_DEPTH, unpackProof } from "@pomp-eth/jssdk"
 import * as circomlibjs from "circomlibjs"
-import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { Group } from "@semaphore-protocol/group"
 import { dnld_aws, P0X_DIR } from "./utility";
 import { resolve } from "path";
@@ -17,6 +16,7 @@ import { deployContracts } from "./fixtures/deployContracts";
 import { Wallet } from "ethers";
 
 import { deploy } from "./deploy";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 
 describe("Pomp", function () {
@@ -29,7 +29,7 @@ describe("Pomp", function () {
   let zkSBT : ZkSBT
 
   before(async () => {
-    signers = await ethers.getSigners();
+    signers = await ethers.getSigners()
     owner = signers[0];   // TODO : why not 10
     await Promise.all(
       [
@@ -48,16 +48,16 @@ describe("Pomp", function () {
     ownerOfZkSbtContract = fixtures.ownerOfZkSbtContract
     zkSBT = fixtures.zkSBT
 
-    pc = await deploy(owner, await zkSBT.getAddress())
+    pc = await deploy(owner, await zkSBT.address)
 
     // approve pomp to operate zkSBT
-    await zkSBT.connect(ownerOfZkSbtContract).setOperator(pc.getAddress(),true)
+    await zkSBT.connect(ownerOfZkSbtContract).setOperator(pc.address,true)
 
   });
 
   it("Create Pomp SDK", async function () {
     sdk = await PompSdk.create(
-      await pc.getAddress(),
+      pc.address,
       owner,
       resolve(P0X_DIR, "./wasm/pomp.wasm"),
       resolve(P0X_DIR, "./zkey/pomp.zkey")
@@ -82,7 +82,7 @@ describe("Pomp", function () {
     // 3/3. generate witness, prove, verify
     const proof =  await generateProof(
       sdk.identity,
-      await pc.salts(ASSET.ETH, RANGE.RANGE_100),
+      BigInt(await pc.salts(ASSET.ETH, RANGE.RANGE_100)),
       group,
       resolve(P0X_DIR, "./wasm/pomp.wasm"),
       resolve(P0X_DIR, "./zkey/pomp.zkey")
@@ -101,7 +101,7 @@ describe("Pomp", function () {
       [
         proof.publicSignals.merkleRoot,
         proof.publicSignals.nullifierHash,
-        await pc.salts(ASSET.ETH, RANGE.RANGE_100)
+        BigInt(await pc.salts(ASSET.ETH, RANGE.RANGE_100))
       ],
       unpackProof(proof.proof)
     )).eq(true)

@@ -4,8 +4,8 @@ import { Identity } from "@semaphore-protocol/identity"
 import {BigNumberish, Proof, SnarkJSProof } from "@semaphore-protocol/proof"
 // import packProof from "@semaphore-protocol/proof/src/packProof"
 // import unpackProof from "@semaphore-protocol/proof/src/unpackProof"
-import { BytesLike, Hexable } from "@ethersproject/bytes"
-import { BigNumber } from "@ethersproject/bignumber"
+//import { BytesLike, Hexable } from "@ethersproject/bytes"
+//import { BigNumber } from "@ethersproject/bignumber"
 const snarkjs = require('snarkjs');
 //import * as snarkjs from "snarkjs"
 
@@ -47,7 +47,7 @@ export function unpackProof(proof: Proof): SnarkJSProof {
 
 export async function generateProof(
   identity : Identity,
-  externalNullifier: BytesLike | Hexable | number | bigint,
+  externalNullifier: bigint,
   group: Group,
   wasmFile : string,
   zkeyFile : string
@@ -75,7 +75,7 @@ export async function generateProof(
     publicSignals: {
       merkleRoot: publicSignals[0],
       nullifierHash: publicSignals[1],
-      externalNullifier: BigNumber.from(externalNullifier).toString()
+      externalNullifier: externalNullifier
     }
   }
 

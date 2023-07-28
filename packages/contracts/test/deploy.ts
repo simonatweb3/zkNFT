@@ -4,7 +4,6 @@ import { ethers } from "hardhat";
 // browser compatible 
 import { PompVerifier, PompVerifier__factory, PoseidonT3__factory } from "../typechain-types";
 import * as circomlibjs from "circomlibjs"
-import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 export async function deploy(
   owner : SignerWithAddress,
@@ -17,31 +16,31 @@ export async function deploy(
     const PoseidonLibFactory = new ethers.ContractFactory(poseidonABI, poseidonBytecode, owner)
     const poseidonLib = await PoseidonLibFactory.deploy()
     //await poseidonLib.deployed()
-    const pt3 = PoseidonT3__factory.connect(await poseidonLib.getAddress(), owner)
-    console.log("PT3 : " , await pt3.getAddress())
+    const pt3 = PoseidonT3__factory.connect(await poseidonLib.address, owner)
+    console.log("PT3 : " , await pt3.address)
 
     // deploy contract : Incremental Binary Tree
     const IncrementalBinaryTreeLibFactory = await ethers.getContractFactory("IncrementalBinaryTree", {
       libraries: {
-        PoseidonT3: await pt3.getAddress()
+        PoseidonT3: await pt3.address
       }
     })
     const incrementalBinaryTreeLib = await IncrementalBinaryTreeLibFactory.deploy()
-    console.log("IBT : " , await incrementalBinaryTreeLib.getAddress())
+    console.log("IBT : " , await incrementalBinaryTreeLib.address)
 
     // deploy contract : verifier
     const v : PompVerifier = await new PompVerifier__factory(owner).deploy()
-    console.log("V : ", await v.getAddress())
+    console.log("V : ", await v.address)
 
     // deploy contract : POMP
     const ContractFactory = await ethers.getContractFactory("Pomp", {
       libraries: {
-        IncrementalBinaryTree: await incrementalBinaryTreeLib.getAddress()
+        IncrementalBinaryTree: await incrementalBinaryTreeLib.address
       }
     })
 
-    const pc = await ContractFactory.deploy(await v.getAddress(), 10, ZkSbt, {gasLimit : 10000000})
-    console.log("POMP : ", await pc.getAddress())
+    const pc = await ContractFactory.deploy(await v.address, 10, ZkSbt, {gasLimit : 10000000})
+    console.log("POMP : ", await pc.address)
     return pc
 }
 

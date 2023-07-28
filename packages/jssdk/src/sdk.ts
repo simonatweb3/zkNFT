@@ -61,8 +61,8 @@ export class PompSdk implements IPomp {
   
   public static async generateAccountPrivKeys(signer : Signer) {
     const signature = await signer.signMessage(POMP_KEY_SIGN_MESSAGE)
-    const trapdoor = ethers.hexlify('0x' + signature.slice(2, 34))
-    const nullifier = ethers.hexlify('0x' + signature.slice(34, 66))
+    const trapdoor = ethers.utils.hexlify('0x' + signature.slice(2, 34))
+    const nullifier = ethers.utils.hexlify('0x' + signature.slice(34, 66))
     return { trapdoor, nullifier };
   }
 
@@ -90,7 +90,7 @@ export class PompSdk implements IPomp {
     // generate ZKP
     const proof =  await generateProof(
       this.identity,
-      await this.pc.salts(ASSET.ETH, RANGE.RANGE_100),
+      BigInt(await this.pc.salts(ASSET.ETH, RANGE.RANGE_100)),
       group,
       this.pomp_wasm,
       this.pomp_zkey
