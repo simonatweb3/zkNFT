@@ -39,13 +39,13 @@ contract Pomp is SemaphoreGroups, Ownable {
   }
 
   // asset_type --> asset_range --> pools)
-  mapping(uint => mapping(uint => Pool)) pools;
+  mapping(uint => mapping(uint => Pool)) public pools;
 
   // external nullifier, increase per verify
   mapping(uint => mapping(uint => uint)) public salts; // random?
   mapping(uint => bool) public nullifierHashes;
 
-  mapping(uint256 => IVerifier) internal verifiers;
+  mapping(uint256 => IVerifier) public verifiers;
 
   event SbtMinted(uint indexed identity, uint asset, uint range, uint sbtId);
 

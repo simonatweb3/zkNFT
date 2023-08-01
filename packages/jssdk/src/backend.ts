@@ -48,4 +48,12 @@ export class PompBackend implements IBackend {
       signature : certificate_signature
     }
   }
+
+  public async set_proof_key(
+    publicAddress : bigint,
+    sbt : SBT,
+    proof : string
+  ) {
+    // verify p
+  }
 }

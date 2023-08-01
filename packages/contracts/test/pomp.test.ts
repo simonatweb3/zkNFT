@@ -106,10 +106,24 @@ describe("Pomp", function () {
     expect(sbts[0].range).eq(sbt.range)
   });
 
-  it("Off-chain Verify Pomp Membership", async function () {
-    // re-construct merkle tree offline
-    const group = new Group(0, TREE_DEPTH, [sdk.identity.getCommitment()]) // group id --> root
+  let group : Group
+  it("Off-chain re-construct merkle tree Group", async function () {
+    const poolId = await pc.pools(sbt.asset, sbt.range)
+    console.log("poolId : ", poolId)
+    const onchain_root = await pc.getMerkleTreeRoot(poolId.id)
 
+    group = (await sdk.reconstructOffchainGroup(sbt, onchain_root.toBigInt())).group
+  
+    //group = new Group(0, TREE_DEPTH, [sdk.identity.getCommitment()]) // group id --> root
+    //exit(0)
+  });
+
+  it("Get zkSBT Proof Key", async function () {
+    const proof_key = await sdk.getLatestProofKey(sbt)
+    console.log("proof_key : ", proof_key)
+  });
+
+  it("Off-chain Verify Pomp Membership", async function () {
     // 3/3. generate witness, prove, verify
     const proof =  await generateProof(
       sdk.identity,

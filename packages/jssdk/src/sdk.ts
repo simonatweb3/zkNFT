@@ -1,16 +1,24 @@
-import {Contract, ethers, Signer} from "ethers"
+import {BigNumber, Contract, ethers, Signer} from "ethers"
 import { Identity } from "@semaphore-protocol/identity"
 import { Group } from "@semaphore-protocol/group"
 //import * as pompJson from "./ABI/Pomp.json"
 import pompJson from "./ABI/Pomp.json"
 import { generateProof } from "./proof"
 import { PompBackend } from "./backend"
-import { ASSET, claim_sbt_message, FileType, pomp2sbt, POMP_CLAIM_MESSAGE, POMP_KEY_SIGN_MESSAGE, RANGE, SBT } from "./common"
+import { ASSET, claim_sbt_message, FileType, pomp2sbt, POMP_CLAIM_MESSAGE, POMP_KEY_SIGN_MESSAGE, RANGE, SBT, TREE_DEPTH } from "./common"
+import bigInt from 'big-integer';
+
+interface eventSbtMinted {
+  identity: BigNumber;
+  asset: BigNumber;
+  range: BigNumber;
+  sbtId: BigNumber;
+}
 
 interface IPomp {
   getPublicAddress() : bigint;
   mint: (asset: number, range: number, sbtId: string) => Promise<number>;
-  getProofKey : (group : Group, asset : number, range : number) => Promise<string>;
+  getProofKey : (group : Group, sbt : SBT) => Promise<string>;
 }
 
 export class PompSdk implements IPomp {
@@ -100,14 +108,22 @@ export class PompSdk implements IPomp {
     return await (await this.pc.mint([this.identity.getCommitment()], asset, range, sbtId, {gasLimit : 1000000})).wait()
   }
 
+  public async getLatestProofKey(
+    sbt : SBT
+  ) : Promise<string> {
+    const poolId = await this.pc.pools(sbt.asset, sbt.range)
+    const onchain_root = await this.pc.getMerkleTreeRoot(poolId.id)
+    const group = (await this.reconstructOffchainGroup(sbt, onchain_root.toBigInt())).group
+    return this.getProofKey(group, sbt)
+  }
+
   public async getProofKey(
     group : Group,
-    asset : number,
-    range : number
+    sbt : SBT
   ) : Promise<string> {
     const proof =  await generateProof(
       this.identity,
-      BigInt(await this.pc.salts(asset,range)),
+      BigInt(await this.pc.salts(sbt.asset, sbt.range)),
       group,
       this.pomp_wasm,
       this.pomp_zkey
@@ -117,8 +133,46 @@ export class PompSdk implements IPomp {
       ["uint256[8]"],
       [proof.proof]
     );
-    
+
+    // signature zkp proof --> proof key
+
     return ethers.utils.keccak256(bytesData); 
+  }
+
+  public async mint_and_generate_proof_key() {
+    // mint
+    // return getProofKey
+  }
+
+  // constrcut off-chain merkle tree group with in-order on chain data,
+  // util match the specific root
+  public async reconstructOffchainGroup(
+    sbt : SBT,
+    root : bigint
+  ) {
+    let group = new Group(0, TREE_DEPTH, [])
+
+    // query on-chain event list
+    // TODO : using subgraph
+    const eventName = "SbtMinted";
+    const eventFilter = this.pc.filters[eventName]();
+    const events = await this.pc.queryFilter(eventFilter);
+
+    // add member to group, until root match
+    for (let idx = 0; idx < events.length; idx++) {
+      const e : eventSbtMinted = events[idx].args as unknown as eventSbtMinted;
+      console.log("e : ", e)
+      if (e.asset.eq(sbt.asset) && e.range.eq(sbt.range)) {
+        group.addMember(e[0])
+        if(bigInt(group.root.toString()).eq(root)) {
+          console.log("same root, merkle tree construct complete!")
+          return {success : true, group : group}
+        }
+      }
+    }
+
+    // if not match root, return false
+    return {success : true, group : group}
   }
 
   public async verify(
