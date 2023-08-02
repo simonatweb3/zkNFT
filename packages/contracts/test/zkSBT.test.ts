@@ -1,4 +1,4 @@
-import { deployContracts } from "./fixtures/testDeployContracts";
+import { deployContracts } from "./fixtures/deployMockContracts";
 import { Pomp, ZkSBT } from "../typechain-types";
 import { expect } from "chai";
 import { BigNumber, Wallet } from "ethers";
