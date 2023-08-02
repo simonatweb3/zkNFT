@@ -17,7 +17,7 @@ export function generateRandomIdentityCommitment() {
   );
 
   return {
-    identityCommitment: ethers.toBigInt(hexIdentityCommitment),
+    identityCommitment: ethers.BigNumber.from(hexIdentityCommitment),
     zkAddress,
   };
 }
