@@ -174,4 +174,22 @@ contract ZkSBT is ERC721URIStorage, Ownable {
 
     return data;
   }
+
+  function burn(uint256 tokenId) public onlyOperator {
+    _burn(tokenId);
+  }
+
+  /**
+   * @dev See {ERC721URIStorage-_burn}. This override additionally delete the tokenId stored in EnumerableSet
+   */
+  function _burn(uint256 tokenId) internal virtual override {
+    // before delete the owner record, first update the enumerable set of the owner
+    address owner = ownerOf(tokenId);
+    _zkSbtSet[owner].remove(tokenId);
+
+    // delete sbt's metaData
+    delete sbtMetaData[tokenId];
+
+    super._burn(tokenId);
+  }
 }
