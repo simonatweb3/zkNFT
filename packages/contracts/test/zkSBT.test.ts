@@ -1,9 +1,12 @@
-import { deployContracts, deployPomp } from "./fixtures/deployContracts";
+import { deployContracts } from "./fixtures/testDeployContracts";
 import { Pomp, ZkSBT } from "../typechain-types";
 import { expect } from "chai";
 import { Wallet } from "ethers";
 import { ethers } from "hardhat";
 import { generateRandomIdentityCommitment } from "../utils/utils";
+import { solidity } from "ethereum-waffle";
+import chai from "chai";
+chai.use(solidity);
 
 describe("ZkSBT basic test", async function () {
   //   let ownerOfPompContract: Wallet;
@@ -28,28 +31,28 @@ describe("ZkSBT basic test", async function () {
 
   describe("operator", async () => {
     it("set operator", async () => {
-      await expect(await zkSBT.operators(operatorOfZkSbtContract)).to.equal(
-        false
-      );
+      await expect(
+        await zkSBT.operators(operatorOfZkSbtContract.address)
+      ).to.equal(false);
       await zkSBT
         .connect(ownerOfZkSbtContract)
         .setOperator(operatorOfZkSbtContract.address, true);
 
-      await expect(await zkSBT.operators(operatorOfZkSbtContract)).to.equal(
-        true
-      );
+      await expect(
+        await zkSBT.operators(operatorOfZkSbtContract.address)
+      ).to.equal(true);
     });
 
     it("unset operator", async () => {
-      await expect(await zkSBT.operators(operatorOfZkSbtContract)).to.equal(
-        true
-      );
+      await expect(
+        await zkSBT.operators(operatorOfZkSbtContract.address)
+      ).to.equal(true);
       await zkSBT
         .connect(ownerOfZkSbtContract)
         .setOperator(operatorOfZkSbtContract.address, false);
-      await expect(await zkSBT.operators(operatorOfZkSbtContract)).to.equal(
-        false
-      );
+      await expect(
+        await zkSBT.operators(operatorOfZkSbtContract.address)
+      ).to.equal(false);
     });
 
     it("only owner of zkSBT contract can set operaotr", async () => {
@@ -88,7 +91,7 @@ describe("ZkSBT basic test", async function () {
       await zkSBT
         .connect(operatorOfZkSbtContract)
         .mintWithSbtId(
-          ethers.toBigInt("0b" + "0" + "1".padStart(255, "0")).toString(),
+          ethers.BigNumber.from("0b" + "0" + "1".padStart(255, "0")).toString(),
           2,
           1,
           1
@@ -98,7 +101,9 @@ describe("ZkSBT basic test", async function () {
         zkSBT
           .connect(operatorOfZkSbtContract)
           .mintWithSbtId(
-            ethers.toBigInt("0b" + "1" + "1".padStart(255, "0")).toString(),
+            ethers.BigNumber.from(
+              "0b" + "1" + "1".padStart(255, "0")
+            ).toString(),
             2,
             1,
             2
@@ -127,7 +132,7 @@ describe("ZkSBT basic test", async function () {
         .mintWithSbtId(identityCommitment, asset, range, sbtId);
 
       await expect(await zkSBT.ownerOf(sbtId)).to.equal(
-        ethers.getAddress(zkAddress)
+        ethers.utils.getAddress(zkAddress)
       );
     });
 
