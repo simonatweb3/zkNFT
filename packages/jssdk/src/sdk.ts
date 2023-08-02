@@ -1,4 +1,6 @@
-import {BigNumber, Contract, ethers, Signer} from "ethers"
+import {Contract, ethers, Signer} from "ethers"
+import type {BigNumber} from 'ethers'
+
 import { Identity } from "@semaphore-protocol/identity"
 import { Group } from "@semaphore-protocol/group"
 //import * as pompJson from "./ABI/Pomp.json"
@@ -104,8 +106,8 @@ export class PompSdk implements IPomp {
   // mint(user tx / server tx) a sbt on-chain (sbt[asset_id] = identity), generate a proof key for backend. 
   public async mint(asset : ASSET, range : RANGE, sbtId : string) {
     console.log("mint pomp for asset ", asset, " range ", range, " sbtId ", sbtId)
-
-    return await (await this.pc.mint([this.identity.getCommitment()], asset, range, sbtId, {gasLimit : 1000000})).wait()
+    
+    return await (await this.pc.mint([this.identity.getCommitment()], asset, range, [sbtId], {gasLimit : 2000000})).wait()
   }
 
   public async getLatestProofKey(
@@ -150,7 +152,7 @@ export class PompSdk implements IPomp {
     sbt : SBT,
     root : bigint
   ) {
-    let group = new Group(0, TREE_DEPTH, [])
+    const group = new Group(0, TREE_DEPTH, [])
 
     // query on-chain event list
     // TODO : using subgraph
@@ -212,7 +214,7 @@ export class PompSdk implements IPomp {
   }
 
   public async query_sbt_list() {
-    let sbt_list: SBT[] = []
+    const sbt_list: SBT[] = []
     for(const asset in Object.values(ASSET)) {  // TODO : fix
       for(const range in Object.values(RANGE)) {
         //console.log("asset ", asset, " range ", range)
