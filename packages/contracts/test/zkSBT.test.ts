@@ -6,6 +6,7 @@ import { ethers } from "hardhat";
 import { generateRandomIdentityCommitment } from "../utils/utils";
 import { solidity } from "ethereum-waffle";
 import chai from "chai";
+import { randomHex } from "../utils/encoding";
 chai.use(solidity);
 
 describe("ZkSBT basic test", async function () {
@@ -208,6 +209,27 @@ describe("ZkSBT basic test", async function () {
           .connect(user_2)
           .transferFrom(user_2.address, user_1.address, sbtId)
       ).to.revertedWith("SBT can't be transferred");
+    });
+  });
+  describe("burn sbt", async () => {
+    // before(async () => {
+    //   await zkSBT
+    //     .connect(operatorOfZkSbtContract)
+    //     .mintWithSbtId(identityCommitment, asset, range, sbtId);
+    // });
+    it("only operator can burn sbt", async () => {
+      const asset = 2;
+      const range = 1;
+      const sbtId = BigNumber.from(randomHex(32));
+      await expect(
+        zkSBT
+          .connect(operatorOfZkSbtContract)
+          .mintWithSbtId(1, asset, range, sbtId)
+      );
+
+      await expect(zkSBT.connect(user_2).burn(sbtId)).to.be.revertedWith(
+        "caller is not operator"
+      );
     });
   });
   describe("zkSBT set", async () => {
