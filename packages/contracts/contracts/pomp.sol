@@ -110,23 +110,24 @@ contract Pomp is SemaphoreGroups, Ownable {
     }
   }
 
-  function verify(
+  // verify with given merkle root and given salt
+  function verifyWithRootAndSalt(
     uint asset,
     uint range,
-    // uint merkle_root,
+    uint merkle_root,
     // uint verify_time,
     uint256 nullifierHash,
-    uint256[8] calldata proof
+    uint256[8] calldata proof,
+    uint salt
   ) public {
-    // check merkle_root match verify_time
+    // check merkle_root valid, and match verify_time
 
     // now using the latest root
     uint256 merkleTreeDepth = getMerkleTreeDepth(pools[asset][range].id);
-    uint256 merkleTreeRoot = getMerkleTreeRoot(pools[asset][range].id);
     uint256[] memory inputs = new uint256[](3);
-    inputs[0] = merkleTreeRoot;
+    inputs[0] = merkle_root;
     inputs[1] = nullifierHash;
-    inputs[2] = salts[asset][range];
+    inputs[2] = salt;
     bool valid = verifiers[merkleTreeDepth].verifyProof(
       [proof[0], proof[1]],
       [[proof[2], proof[3]], [proof[4], proof[5]]],
@@ -135,6 +136,29 @@ contract Pomp is SemaphoreGroups, Ownable {
     );
     require(valid, "proof invalid!");
 
+  }
+
+  // verify with on-chain latest merkle tree and given salt
+  function verifyWithSalt(
+    uint asset,
+    uint range,
+    uint256 nullifierHash,
+    uint256[8] calldata proof,
+    uint salt
+  ) public {
+    uint256 merkleTreeRoot = getMerkleTreeRoot(pools[asset][range].id);
+    verifyWithRootAndSalt(asset, range, merkleTreeRoot, nullifierHash, proof, salt);
+  }
+
+  // verify with on-chain latest merkle tree and on-chain salt
+  function verify(
+    uint asset,
+    uint range,
+    uint256 nullifierHash,
+    uint256[8] calldata proof
+  ) public {
+    uint256 merkleTreeRoot = getMerkleTreeRoot(pools[asset][range].id);
+    verifyWithRootAndSalt(asset, range, merkleTreeRoot, nullifierHash, proof, salts[asset][range]);
     // random change salts[asset][range]?
   }
 

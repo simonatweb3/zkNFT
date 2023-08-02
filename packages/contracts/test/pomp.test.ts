@@ -94,12 +94,6 @@ describe("Pomp", function () {
 
 
   it("Query zkSBT", async function () {
-    // for(const asset in Object.values(ASSET)) {
-    //   console.log("asset : ", asset)
-    // }
-    // for(const range in Object.values(RANGE)) {
-    //   console.log("range : ", range)
-    // }
     const sbts = await sdk.query_sbt_list()
     console.log("sbts : ", sbts)
     expect(sbts[0].asset).eq(sbt.asset)
@@ -113,9 +107,6 @@ describe("Pomp", function () {
     const onchain_root = await pc.getMerkleTreeRoot(poolId.id)
 
     group = (await sdk.reconstructOffchainGroup(sbt, onchain_root.toBigInt())).group
-  
-    //group = new Group(0, TREE_DEPTH, [sdk.identity.getCommitment()]) // group id --> root
-    //exit(0)
   });
 
   it("Get zkSBT Proof Key", async function () {
@@ -133,7 +124,7 @@ describe("Pomp", function () {
       resolve(P0X_DIR, "./zkey/pomp.zkey")
     )
 
-    console.log("proof : ", proof)
+    //console.log("proof : ", proof)
 
     // off-chain verify proof
     const zkey_final = {

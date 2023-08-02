@@ -163,7 +163,7 @@ export class PompSdk implements IPomp {
     // add member to group, until root match
     for (let idx = 0; idx < events.length; idx++) {
       const e : eventSbtMinted = events[idx].args as unknown as eventSbtMinted;
-      console.log("e : ", e)
+      //console.log("e : ", e)
       if (e.asset.eq(sbt.asset) && e.range.eq(sbt.range)) {
         group.addMember(e[0])
         if(bigInt(group.root.toString()).eq(root)) {
