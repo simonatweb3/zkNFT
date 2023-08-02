@@ -3,8 +3,11 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 contract ZkSBT is ERC721URIStorage, Ownable {
+  using EnumerableSet for EnumerableSet.UintSet;
+
   // operators allowed to mint SBT
   mapping(address => bool) public operators;
 
@@ -13,6 +16,9 @@ contract ZkSBT is ERC721URIStorage, Ownable {
 
   // zkAddress => identityCommitment, to check potential collision
   mapping(address => uint256) public zkAddressPreImage;
+
+  // zkAddress => zkSbt set
+  mapping(address => EnumerableSet.UintSet) private _zkSbtSet;
 
   string public baseUri;
 
@@ -39,6 +45,14 @@ contract ZkSBT is ERC721URIStorage, Ownable {
   struct MetaData {
     uint256 asset; // used to distinguish different asset
     uint256 range;
+  }
+
+  // tokenId and MetaData information
+  struct TokenIdWithMetadata {
+    uint256 tokenId;
+    uint256 asset; // used to distinguish different asset
+    uint256 range;
+    string uri;
   }
 
   constructor() ERC721("ZkSBT", "ZkSBT") {}
@@ -75,6 +89,9 @@ contract ZkSBT is ERC721URIStorage, Ownable {
 
     // mint sbt
     _safeMint(zkAddress, tokenId);
+
+    // update zkSBT set
+    _zkSbtSet[zkAddress].add(tokenId);
 
     sbtMetaData[tokenId] = MetaData(asset, range);
 
@@ -125,5 +142,36 @@ contract ZkSBT is ERC721URIStorage, Ownable {
   ) external onlyOperator returns (bool) {
     baseUri = _baseUri;
     return true;
+  }
+
+  /**
+   * @dev set base Uri
+   * @param _zkAddress the zkAddress to query for zkSbt set
+   * @return data      information of the zkSbt set of the _zkAddress
+   */
+  function zkAddressSbtSet(
+    address _zkAddress
+  ) public view returns (TokenIdWithMetadata[] memory data) {
+    EnumerableSet.UintSet storage zkSbtSet = _zkSbtSet[_zkAddress];
+
+    bytes32[] memory valueLs = zkSbtSet._inner._values;
+
+    uint256 l = valueLs.length;
+
+    data = new TokenIdWithMetadata[](l);
+
+    for (uint i; i < l; i++) {
+      uint256 tokenId = uint256(valueLs[i]);
+      MetaData memory metaData = sbtMetaData[tokenId];
+      string memory tokenUri = tokenURI(tokenId);
+      data[i] = TokenIdWithMetadata(
+        tokenId,
+        metaData.asset,
+        metaData.range,
+        tokenUri
+      );
+    }
+
+    return data;
   }
 }
