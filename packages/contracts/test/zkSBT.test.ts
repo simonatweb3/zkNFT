@@ -1,7 +1,7 @@
 import { deployContracts } from "./fixtures/testDeployContracts";
 import { Pomp, ZkSBT } from "../typechain-types";
 import { expect } from "chai";
-import { Wallet } from "ethers";
+import { BigNumber, Wallet } from "ethers";
 import { ethers } from "hardhat";
 import { generateRandomIdentityCommitment } from "../utils/utils";
 import { solidity } from "ethereum-waffle";
@@ -76,25 +76,37 @@ describe("ZkSBT basic test", async function () {
 
   describe("mint", async () => {
     it("only operaor can mintWithSbtId", async () => {
+      const asset = 2;
+      const range = 1;
+      const sbtId = 1;
       await expect(
-        zkSBT.connect(user_2).mintWithSbtId(1, 2, 1, 1)
+        zkSBT.connect(user_2).mintWithSbtId(1, asset, range, sbtId)
       ).to.be.revertedWith("caller is not operator");
     });
 
     it("identityCommitment can't be zero", async () => {
+      const asset = 2;
+      const range = 1;
+      const sbtId = 1;
       await expect(
-        zkSBT.connect(operatorOfZkSbtContract).mintWithSbtId(0, 2, 1, 1)
+        zkSBT
+          .connect(operatorOfZkSbtContract)
+          .mintWithSbtId(0, asset, range, sbtId)
       ).to.be.revertedWith("invalid identityCommitment");
     });
 
     it("zkAddress can't collide", async () => {
+      const asset = 2;
+      const range = 1;
+      const sbtId = 1;
+
       await zkSBT
         .connect(operatorOfZkSbtContract)
         .mintWithSbtId(
-          ethers.BigNumber.from("0b" + "0" + "1".padStart(255, "0")).toString(),
-          2,
-          1,
-          1
+          ethers.BigNumber.from("0x" + "0" + "1".padStart(63, "0")).toString(),
+          asset,
+          range,
+          sbtId
         );
 
       await expect(
@@ -102,13 +114,13 @@ describe("ZkSBT basic test", async function () {
           .connect(operatorOfZkSbtContract)
           .mintWithSbtId(
             ethers.BigNumber.from(
-              "0b" + "1" + "1".padStart(255, "0")
+              "0x" + "1" + "1".padStart(63, "0")
             ).toString(),
-            2,
-            1,
+            asset,
+            range,
             2
           )
-      ).to.rejectedWith("collision of zkAddress");
+      ).to.revertedWith("collision of zkAddress");
     });
 
     it("can't mint same SBT twice", async () => {
@@ -196,6 +208,115 @@ describe("ZkSBT basic test", async function () {
           .connect(user_2)
           .transferFrom(user_2.address, user_1.address, sbtId)
       ).to.revertedWith("SBT can't be transferred");
+    });
+  });
+  describe("zkSBT set", async () => {
+    let baseUri: string;
+    before(async () => {
+      baseUri = "zkSBT.metadata.manta.network/";
+      await zkSBT.connect(operatorOfZkSbtContract).setBaseUri(baseUri);
+    });
+    it("mint one zkSBT, and zkSBT should be updated", async () => {
+      const { identityCommitment, zkAddress } =
+        generateRandomIdentityCommitment();
+
+      const asset = 2;
+      const range = 1;
+      const sbtId = 8;
+
+      await zkSBT
+        .connect(operatorOfZkSbtContract)
+        .mintWithSbtId(identityCommitment, asset, range, sbtId);
+
+      await expect(await zkSBT.zkAddressSbtSet(zkAddress)).to.eql([
+        [
+          BigNumber.from(sbtId),
+          BigNumber.from(asset),
+          BigNumber.from(range),
+          baseUri + sbtId.toString(),
+        ],
+      ]);
+    });
+    it("mint multi zkSBT, and zkSBT should be updated by order", async () => {
+      const { identityCommitment, zkAddress } =
+        generateRandomIdentityCommitment();
+
+      const asset_1 = 2;
+      const range_1 = 1;
+      const sbtId_1 = 9;
+
+      const asset_2 = 2;
+      const range_2 = 1;
+      const sbtId_2 = 10;
+
+      await zkSBT
+        .connect(operatorOfZkSbtContract)
+        .mintWithSbtId(identityCommitment, asset_1, range_1, sbtId_1);
+
+      await zkSBT
+        .connect(operatorOfZkSbtContract)
+        .mintWithSbtId(identityCommitment, asset_2, range_2, sbtId_2);
+
+      await expect(await zkSBT.zkAddressSbtSet(zkAddress)).to.eql([
+        [
+          BigNumber.from(sbtId_1),
+          BigNumber.from(asset_1),
+          BigNumber.from(range_1),
+          baseUri + sbtId_1.toString(),
+        ],
+        [
+          BigNumber.from(sbtId_2),
+          BigNumber.from(asset_2),
+          BigNumber.from(range_2),
+          baseUri + sbtId_2.toString(),
+        ],
+      ]);
+    });
+    it("after zkSBT has been burned, the zkSBT set should be updated", async () => {
+      const { identityCommitment, zkAddress } =
+        generateRandomIdentityCommitment();
+
+      const asset_1 = 2;
+      const range_1 = 1;
+      const sbtId_1 = 11;
+
+      const asset_2 = 2;
+      const range_2 = 1;
+      const sbtId_2 = 12;
+
+      await zkSBT
+        .connect(operatorOfZkSbtContract)
+        .mintWithSbtId(identityCommitment, asset_1, range_1, sbtId_1);
+
+      await zkSBT
+        .connect(operatorOfZkSbtContract)
+        .mintWithSbtId(identityCommitment, asset_2, range_2, sbtId_2);
+
+      await expect(await zkSBT.zkAddressSbtSet(zkAddress)).to.eql([
+        [
+          BigNumber.from(sbtId_1),
+          BigNumber.from(asset_1),
+          BigNumber.from(range_1),
+          baseUri + sbtId_1.toString(),
+        ],
+        [
+          BigNumber.from(sbtId_2),
+          BigNumber.from(asset_2),
+          BigNumber.from(range_2),
+          baseUri + sbtId_2.toString(),
+        ],
+      ]);
+
+      await zkSBT.connect(operatorOfZkSbtContract).burn(sbtId_1);
+
+      await expect(await zkSBT.zkAddressSbtSet(zkAddress)).to.eql([
+        [
+          BigNumber.from(sbtId_2),
+          BigNumber.from(asset_2),
+          BigNumber.from(range_2),
+          baseUri + sbtId_2.toString(),
+        ],
+      ]);
     });
   });
 });
