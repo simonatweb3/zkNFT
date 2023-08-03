@@ -86,7 +86,7 @@ contract Pomp is SemaphoreGroups, Ownable {
     uint[] calldata identity,
     uint asset,
     uint range,
-    uint sbtId
+    uint[] calldata sbtId
     //bytes[] calldata certificate_signature
   ) public onlyOwner {    
     for (uint256 idx = 0; idx < identity.length; idx++) {
@@ -103,10 +103,10 @@ contract Pomp is SemaphoreGroups, Ownable {
 
       sbt_minted[asset][range][identity[idx]] = true;
 
-      bool success = ZkSbt.mintWithSbtId(identity[idx], asset, range, sbtId);
+      bool success = ZkSbt.mintWithSbtId(identity[idx], asset, range, sbtId[idx]);
       require(success, "failed to mint zkSBT");
 
-      emit SbtMinted(identity[idx], asset, range, sbtId);
+      emit SbtMinted(identity[idx], asset, range, sbtId[idx]);
     }
   }
 
