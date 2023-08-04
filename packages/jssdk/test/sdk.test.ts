@@ -1,7 +1,4 @@
-//import {PompSdk} from "@pomp-eth/jssdk/src/Sdk"
-//import { expect } from "chai";
-import { PompSdk } from "../src/sdk"
-//import {PompSdk} from "../src/index"
+import { ZKSbt } from "../src/sdk"
 import { Signer, Wallet } from "ethers";
 
 async function test() {

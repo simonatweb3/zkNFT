@@ -1,5 +1,5 @@
 {
-  "name": "@pomp-eth/circuits",
+  "name": "@zksbt/circuits",
   "packageManager": "yarn@3.5.0",
   "version": "0.0.1",
   "scripts": {

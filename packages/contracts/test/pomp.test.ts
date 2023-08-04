@@ -5,9 +5,8 @@ import * as snarkjs from "snarkjs"
 import { expect } from "chai";
 
 // browser compatible 
-import { Pomp, PompVerifier, PompVerifier__factory, Pomp__factory, PoseidonT3__factory} from "../typechain-types";
-import { ASSET, generateProof, hash, RANGE, TREE_DEPTH, unpackProof, claim_sbt_message, pomp2sbt, SBT, ZKSbt } from "@pomp-eth/jssdk"
-import * as circomlibjs from "circomlibjs"
+import { Zksbt} from "../typechain-types";
+import { ASSET, generateProof, hash, RANGE, TREE_DEPTH, unpackProof, claim_sbt_message, pomp2sbt, SBT, ZKSbtSDK } from "@zksbt/jssdk"
 import { Group } from "@semaphore-protocol/group"
 import { dnld_aws, P0X_DIR } from "./utility";
 import { resolve } from "path";
@@ -20,14 +19,14 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { exit } from "process";
 
 
-describe("Pomp", function () {
+describe("Zksbt", function () {
   this.timeout(6000000);
   let owner: SignerWithAddress;
   let signers: SignerWithAddress;
-  let pc : Pomp
-  let sdk : PompSdk
+  let pc : Zksbt
+  let sdk : ZKSbtSDK
   let ownerOfZkSbtContract: Wallet;
-  let zkSBT : ZkSBT
+  let zkSBT : SBT
 
   before(async () => {
     signers = await ethers.getSigners()
@@ -50,13 +49,13 @@ describe("Pomp", function () {
 
     pc = await deploy(owner, await zkSBT.address)
 
-    // approve pomp to operate zkSBT
+    // approve to operate zkSBT
     await zkSBT.connect(owner).setOperator(pc.address,true)
 
   });
 
   it("Create Pomp SDK", async function () {
-    sdk = await ZKSbt.create(
+    sdk = await ZKSbtSDK.create(
       pc.address,
       owner,
       resolve(P0X_DIR, "./wasm/pomp.wasm"),

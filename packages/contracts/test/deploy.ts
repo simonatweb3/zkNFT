@@ -2,14 +2,14 @@
 import { ethers } from "hardhat";
 
 // browser compatible 
-import { PompVerifier, PompVerifier__factory, PoseidonT3__factory } from "../typechain-types";
+import { PoseidonT3__factory, ZksbtVerifier, ZksbtVerifier__factory } from "../typechain-types";
 import * as circomlibjs from "circomlibjs"
 import { deployContracts } from "./fixtures/deployContracts";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 export async function deploy(
   owner : SignerWithAddress,
-  ZkSbt : string,
+  Sbt : string,
 ) {
     // deploy contract : poseidon(2)
     const NINPUT = 2
@@ -31,19 +31,19 @@ export async function deploy(
     console.log("IBT : " , await incrementalBinaryTreeLib.address)
 
     // deploy contract : verifier
-    const v : PompVerifier = await new PompVerifier__factory(owner).deploy()
+    const v : ZksbtVerifier = await new ZksbtVerifier__factory(owner).deploy()
     console.log("V : ", await v.address)
 
-    // deploy contract : POMP
-    const ContractFactory = await ethers.getContractFactory("Pomp", {
+    // deploy contract : zkSBT
+    const ContractFactory = await ethers.getContractFactory("Zksbt", {
       libraries: {
         IncrementalBinaryTree: await incrementalBinaryTreeLib.address
       }
     })
 
-    console.log("ZKSBT : ", ZkSbt)
-    const pc = await ContractFactory.deploy(await v.address, 10, ZkSbt, {gasLimit : 10000000})
-    console.log("POMP : ", await pc.address)
+    console.log("SBT : ", Sbt)
+    const pc = await ContractFactory.deploy(await v.address, 10, Sbt, {gasLimit : 10000000})
+    console.log("ZKSBT : ", await pc.address)
     return pc
 }
 
@@ -63,7 +63,7 @@ if (process.env.DEPLOY_NPO) {
 
       const pc = await deploy(owner, await zkSBT.address)
 
-      // approve pomp to operate zkSBT
+      // approve to operate zkSBT
       await zkSBT.connect(owner).setOperator(pc.address,true)
     });
   });

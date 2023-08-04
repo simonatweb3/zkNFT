@@ -1,5 +1,5 @@
 import { deployContracts } from "./fixtures/deployMockContracts";
-import { Pomp, ZkSBT } from "../typechain-types";
+import { Zksbt, Sbt } from "../typechain-types";
 import { expect } from "chai";
 import { BigNumber, Wallet } from "ethers";
 import { ethers } from "hardhat";
@@ -15,8 +15,7 @@ describe("ZkSBT basic test", async function () {
   let operatorOfZkSbtContract: Wallet;
   let user_1: Wallet;
   let user_2: Wallet;
-  //   let pomp: Pomp;
-  let zkSBT: ZkSBT;
+  let zkSBT: Sbt;
 
   before(async () => {
     ({
@@ -25,7 +24,6 @@ describe("ZkSBT basic test", async function () {
       operatorOfZkSbtContract,
       user_1,
       user_2,
-      //   pomp,
       zkSBT,
     } = await deployContracts());
   });

@@ -4,7 +4,7 @@ import type {BigNumber} from 'ethers'
 import { Identity } from "@semaphore-protocol/identity"
 import { Group } from "@semaphore-protocol/group"
 //import * as pompJson from "./ABI/Pomp.json"
-import pompJson from "./ABI/Pomp.json"
+import zksbtJson from "./ABI/Zksbt.json"
 import { generateProof } from "./proof"
 import { Backend } from "./backend"
 import { ASSET, claim_sbt_message, FileType, pomp2sbt, POMP_CLAIM_MESSAGE, POMP_KEY_SIGN_MESSAGE, RANGE, SBT, TREE_DEPTH } from "./common"
@@ -29,7 +29,7 @@ interface IZKSbt {
   getProofKey : (group : Group, sbt : SBT) => Promise<string>;
 }
 
-export class ZKSbt implements IZKSbt {
+export class ZKSbtSDK implements IZKSbt {
   pc: Contract;
   signer: Signer;
   pomp_wasm: FileType | undefined;
@@ -47,7 +47,7 @@ export class ZKSbt implements IZKSbt {
     identity: Identity
   ) {
     this.signer = signer;
-    this.pc = new ethers.Contract(pompContract, pompJson.abi, signer);
+    this.pc = new ethers.Contract(pompContract, zksbtJson.abi, signer);
     this.identity = identity
 
     this.backend = new Backend(signer);
@@ -58,9 +58,9 @@ export class ZKSbt implements IZKSbt {
     signer: Signer,
     pomp_wasm: FileType,
     pomp_zkey: FileType,
-  ): Promise<ZKSbt> => {
-    const identity = ZKSbt.generateIdentity(JSON.stringify(await ZKSbt.generateAccountPrivKeys(signer)))
-    const ctx = new ZKSbt(pompContract, signer, identity);
+  ): Promise<ZKSbtSDK> => {
+    const identity = ZKSbtSDK.generateIdentity(JSON.stringify(await ZKSbtSDK.generateAccountPrivKeys(signer)))
+    const ctx = new ZKSbtSDK(pompContract, signer, identity);
     ctx.pomp_wasm = pomp_wasm
     ctx.pomp_zkey = pomp_zkey
     return ctx;
