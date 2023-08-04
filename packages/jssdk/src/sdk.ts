@@ -7,7 +7,7 @@ import { Group } from "@semaphore-protocol/group"
 import zksbtJson from "./ABI/Zksbt.json"
 import { generateProof } from "./proof"
 import { Backend } from "./backend"
-import { ASSET, claim_sbt_message, FileType, pomp2sbt, ZKSBT_CLAIM_MESSAGE, ZKSBT_KEY_SIGN_MESSAGE, RANGE, SBT, TREE_DEPTH } from "./common"
+import { ASSET, claim_sbt_message, FileType, pomp2sbt, ZKSBT_KEY_SIGN_MESSAGE, RANGE, SBT, TREE_DEPTH } from "./common"
 import bigInt from 'big-integer';
 
 interface eventSbtMinted {
@@ -24,7 +24,7 @@ interface IZKSbt {
     signature: string;
   }>;
   mint : (sbt : SBT, sbtId: string) => Promise<number>;
-  mintCertificateZKSBT : (sbt : SBT, sbtId: string, sig : string) => Promise<number>;
+  mintCertificateZKSBT : (sbt : SBT, sbtId: bigint, sig : string) => Promise<number>;
   getLatestProofKey : (sbt : SBT) => Promise<string>;
   getProofKey : (group : Group, sbt : SBT) => Promise<string>;
 }
@@ -114,7 +114,7 @@ export class ZKSbtSDK implements IZKSbt {
 
   public async mintCertificateZKSBT(
     sbt : SBT,
-    sbtId : string,
+    sbtId : bigint,
     sig : string
   ) {
     console.log("mint zksbt for asset ", sbt.asset, " range ", sbt.range, " sbtId ", sbtId)
@@ -130,11 +130,10 @@ export class ZKSbtSDK implements IZKSbt {
 
   // mint(user tx / server tx) a sbt on-chain (sbt[asset_id] = identity), generate a proof key for backend. 
   public async mint(
-    sbt : SBT,
-    sbtId : string
+    sbt : SBT
   ) {
-    const sig = await (await this.get_web2_certificate(sbt)).signature
-    return await this.mintCertificateZKSBT(sbt, sbtId, sig)
+    const certificate = await this.get_web2_certificate(sbt)
+    return await this.mintCertificateZKSBT(sbt, certificate.sbt_id, certificate.signature)
   }
 
   public async getLatestProofKey(

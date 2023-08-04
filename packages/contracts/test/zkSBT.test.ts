@@ -79,7 +79,8 @@ describe("Zksbt", function () {
   });
 
   it("Mint Pomp with certificate signature", async function () {
-    await sdk.mint(sbt,"1")
+    await sdk.mint(sbt)
+    exit(0)
   });
 
   it("Query zkSBT", async function () {

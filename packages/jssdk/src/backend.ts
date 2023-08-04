@@ -1,5 +1,5 @@
 import {ethers, Signer} from "ethers"
-import { claim_sbt_message, ZKSBT_KEY_SIGN_MESSAGE, SBT } from "./common";
+import { claim_sbt_message, ZKSBT_KEY_SIGN_MESSAGE, SBT, certificate_sbt_message } from "./common";
 
 interface IBackend {
   //is_eligible : () => boolean
@@ -21,9 +21,10 @@ export class Backend implements IBackend {
     return true
   }
 
-  // TODO : get the allocated asset_id from backend/on-chain contract
+  // TODO : backend reserve the asset id in DB
   public allocate_asset_id(sbt : SBT) : bigint {
     return BigInt(5678);
+    //return BigInt(Math.floor(Math.random() * Math.pow(2, 32)))
   }
 
   public async certificate(
@@ -37,15 +38,19 @@ export class Backend implements IBackend {
     )
 
     // TODO : check privateAddress is eligble to sbt
+    // return {eligble : false, } if not eligble
 
+    // allocate sbt_id
+    const sbt_id = this.allocate_asset_id(sbt)
 
     // server signature(publicAddress, sbt)
     const certificate_signature = await this.signer.signMessage(
-      claim_sbt_message(publicAddress.toString(), sbt)
+      certificate_sbt_message(publicAddress.toString(), sbt, sbt_id.toString())
     );
     return {
       eligible : true,
-      signature : certificate_signature
+      signature : certificate_signature,
+      sbt_id : sbt_id
     }
   }
 

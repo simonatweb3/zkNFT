@@ -1,7 +1,7 @@
 export type FileType = any;
 export const ZKSBT_KEY_SIGN_MESSAGE =
   "Sign this message to generate your Pomp Privacy Key. This key lets the application decrypt your identity on Pomp.\n\nIMPORTANT: Only sign this message if you trust the application.";
-export const ZKSBT_CLAIM_MESSAGE = "Sign this message to claim your zkSBT : "
+export const ZKSBT_CLAIM_MSG = "Sign this meesage to claim zkSBT : "
 export const TREE_DEPTH = 10
 
 export enum SBT_TYPE {
@@ -24,6 +24,8 @@ export enum RANGE {
 }
 
 // TODO : SBT Spec
+// 256bit : | sbt_type(64) | sbt_attribtute(64) | sbt_id(128) |
+// pomp :   |        2     |   0       3        |  5678       |
 export interface SBT {
   type  : SBT_TYPE;   // mintId --> name/address
   asset : number;
@@ -46,11 +48,21 @@ export function claim_sbt_message(
   publicAddress : string,
   sbt : SBT
 ) {
-  let SBT_CLAIM_MESSAGE = ZKSBT_CLAIM_MESSAGE
-  SBT_CLAIM_MESSAGE += " identity " + publicAddress.toString()
-  SBT_CLAIM_MESSAGE += " sbt type id " + sbt.type.toString()
-  SBT_CLAIM_MESSAGE += " asset type id " + sbt.asset.toString()
-  SBT_CLAIM_MESSAGE += " range type id " + sbt.range.toString()
-  console.log("claim_sbt_message : ", SBT_CLAIM_MESSAGE)
-  return SBT_CLAIM_MESSAGE
+  let SBT_CLAIM_MSG = ZKSBT_CLAIM_MSG
+  SBT_CLAIM_MSG += " identity " + publicAddress.toString()
+  SBT_CLAIM_MSG += " sbt type id " + sbt.type.toString()
+  SBT_CLAIM_MSG += " asset type id " + sbt.asset.toString()
+  SBT_CLAIM_MSG += " range type id " + sbt.range.toString()
+  console.log("claim_sbt_message : ", SBT_CLAIM_MSG)
+  return SBT_CLAIM_MSG
+}
+
+export function certificate_sbt_message(
+  publicAddress : string,
+  sbt : SBT,
+  sbt_id : string
+) {
+  const SBT_CERTI_MSG = claim_sbt_message(publicAddress, sbt) + " allocate sbt id " + sbt_id.toString()
+  console.log("SBT_CERTI_MSG : ", SBT_CERTI_MSG)
+  return SBT_CERTI_MSG
 }

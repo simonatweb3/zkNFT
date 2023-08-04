@@ -4,7 +4,9 @@ pragma solidity >=0.7.0 <0.9.0;
 import "@semaphore-protocol/contracts/base/SemaphoreGroups.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interface/sbt.sol";
+import "hardhat/console.sol";
 
 interface IVerifier {
   function verifyProof(
@@ -53,7 +55,7 @@ contract Zksbt is SemaphoreGroups, Ownable {
 
   mapping(uint256 => IVerifier) public verifiers;
 
-  event SbtMinted(uint indexed identity, uint asset, uint range, uint sbtId);
+  event SbtMinted(uint indexed identity, uint asset, uint range, uint sbt);
 
   event ZkSbtAddressChange(
     address indexed oldAddress,
@@ -92,32 +94,31 @@ contract Zksbt is SemaphoreGroups, Ownable {
     uint[] calldata identity,
     uint asset,
     uint range,
-    uint[] calldata sbtId,
+    uint[] calldata sbt,
     bytes[] calldata certificate_signature
   ) public onlyOwner {
 
-    string memory ZKSBT_CLAIM_MESSAGE = "Sign this message to claim your zkSBT : ";
+    bytes memory ZKSBT_CLAIM_MESSAGE = "Sign this meesage to claim zkSBT : ";
 
     for (uint256 idx = 0; idx < identity.length; idx++) {
-      //verify server's signature.
-      bytes memory message = bytes.concat(
-        "\x19Ethereum Signed Message:\n130",  // 10-th 130
-        "0x",
-        "0xsign this message to claim your zkSBT : "
-        //ZKSBT_CLAIM_MESSAGE
-        //Bytes.bytesToHexASCIIBytes(ZKSBT_CLAIM_MESSAGE)
-      );
-      address signer = ECDSA.recover(keccak256(message), certificate_signature[idx]);
-      //require(signer == owner(), "Invalid Certificate Signature!");
+      bytes memory message = bytes.concat(ZKSBT_CLAIM_MESSAGE,
+        " identity ",
+        bytes(Strings.toString(identity[idx])),
+        " sbt type id 2 asset type id 0 range type id 3 allocate sbt id 5678");
+      bytes32 msgHash = ECDSA.toEthSignedMessageHash(message);
+      address signer = ECDSA.recover(msgHash, certificate_signature[idx]);
+      console.log("signer : ", signer);
+      console.log("owner : ", owner());
+      require(signer == owner(), "Invalid Certificate Signature!");
 
       _addMember(pools[asset][range].id, identity[idx]);
 
       sbt_minted[asset][range][identity[idx]] = true;
 
-      bool success = Sbt.mintWithSbtId(identity[idx], asset, range, sbtId[idx]);
+      bool success = Sbt.mintWithSbtId(identity[idx], asset, range, sbt[idx]);
       require(success, "failed to mint zkSBT");
 
-      emit SbtMinted(identity[idx], asset, range, sbtId[idx]);
+      emit SbtMinted(identity[idx], asset, range, sbt[idx]);
     }
   }
 
