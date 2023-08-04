@@ -1,5 +1,5 @@
 import {ethers, Signer} from "ethers"
-import { claim_sbt_message, POMP_KEY_SIGN_MESSAGE, SBT } from "./common";
+import { claim_sbt_message, ZKSBT_KEY_SIGN_MESSAGE, SBT } from "./common";
 
 interface IBackend {
   //is_eligible : () => boolean

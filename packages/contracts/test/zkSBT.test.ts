@@ -1,342 +1,153 @@
-import { deployContracts } from "./fixtures/deployMockContracts";
-import { Zksbt, Sbt } from "../typechain-types";
-import { expect } from "chai";
-import { BigNumber, Wallet } from "ethers";
+// browser non-compatible 
 import { ethers } from "hardhat";
-import { generateRandomIdentityCommitment } from "../utils/utils";
-import { solidity } from "ethereum-waffle";
-import chai from "chai";
-import { randomHex } from "../utils/encoding";
-chai.use(solidity);
+import * as fs from "fs";
+import * as snarkjs from "snarkjs"
+import { expect } from "chai";
 
-describe("ZkSBT basic test", async function () {
-  //   let ownerOfPompContract: Wallet;
+// browser compatible 
+import { Zksbt} from "../typechain-types";
+import { ASSET, generateProof, hash, RANGE, TREE_DEPTH, unpackProof, claim_sbt_message, pomp2sbt, SBT, ZKSbtSDK } from "@zksbt/jssdk"
+import { Group } from "@semaphore-protocol/group"
+import { dnld_aws, P0X_DIR } from "./utility";
+import { resolve } from "path";
+
+import { deployContracts } from "./fixtures/deployContracts";
+import { Wallet } from "ethers";
+
+import { deploy } from "./deploy";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { exit } from "process";
+
+
+describe("Zksbt", function () {
+  this.timeout(6000000);
+  let owner: SignerWithAddress;
+  let signers: SignerWithAddress;
+  let pc : Zksbt
+  let sdk : ZKSbtSDK
   let ownerOfZkSbtContract: Wallet;
-  let operatorOfZkSbtContract: Wallet;
-  let user_1: Wallet;
-  let user_2: Wallet;
-  let zkSBT: Sbt;
+  let zkSBT : SBT
 
   before(async () => {
-    ({
-      //   ownerOfPompContract,
-      ownerOfZkSbtContract,
-      operatorOfZkSbtContract,
-      user_1,
-      user_2,
-      zkSBT,
-    } = await deployContracts());
+    signers = await ethers.getSigners()
+    owner = signers[0];   // TODO : why not 10
+    await Promise.all(
+      [
+        "wasm/zksbt.wasm",
+        "zkey/zksbt.zkey",
+      ].map(async (e) => {
+        await dnld_aws(e);
+      }),
+    );
+
   });
 
-  describe("operator", async () => {
-    it("set operator", async () => {
-      await expect(
-        await zkSBT.operators(operatorOfZkSbtContract.address)
-      ).to.equal(false);
-      await zkSBT
-        .connect(ownerOfZkSbtContract)
-        .setOperator(operatorOfZkSbtContract.address, true);
+  it("Deploy", async function () {
+    // deploy zkSBT contract
+    const fixtures = await deployContracts(owner)
+    zkSBT = fixtures.zkSBT
 
-      await expect(
-        await zkSBT.operators(operatorOfZkSbtContract.address)
-      ).to.equal(true);
-    });
+    pc = await deploy(owner, await zkSBT.address)
 
-    it("unset operator", async () => {
-      await expect(
-        await zkSBT.operators(operatorOfZkSbtContract.address)
-      ).to.equal(true);
-      await zkSBT
-        .connect(ownerOfZkSbtContract)
-        .setOperator(operatorOfZkSbtContract.address, false);
-      await expect(
-        await zkSBT.operators(operatorOfZkSbtContract.address)
-      ).to.equal(false);
-    });
+    // approve to operate zkSBT
+    await zkSBT.connect(owner).setOperator(pc.address,true)
 
-    it("only owner of zkSBT contract can set operaotr", async () => {
-      await expect(
-        zkSBT
-          .connect(user_1)
-          .setOperator(operatorOfZkSbtContract.address, false)
-      ).to.be.revertedWith("Ownable: caller is not the owner");
-    });
-
-    it("set operator emit event OperatorChange", async () => {
-      await expect(
-        zkSBT
-          .connect(ownerOfZkSbtContract)
-          .setOperator(operatorOfZkSbtContract.address, true)
-      )
-        .to.emit(zkSBT, "OperatorChange")
-        .withArgs(operatorOfZkSbtContract.address, true);
-    });
   });
 
-  describe("mint", async () => {
-    it("only operaor can mintWithSbtId", async () => {
-      const asset = 2;
-      const range = 1;
-      const sbtId = 1;
-      await expect(
-        zkSBT.connect(user_2).mintWithSbtId(1, asset, range, sbtId)
-      ).to.be.revertedWith("caller is not operator");
-    });
-
-    it("identityCommitment can't be zero", async () => {
-      const asset = 2;
-      const range = 1;
-      const sbtId = 1;
-      await expect(
-        zkSBT
-          .connect(operatorOfZkSbtContract)
-          .mintWithSbtId(0, asset, range, sbtId)
-      ).to.be.revertedWith("invalid identityCommitment");
-    });
-
-    it("zkAddress can't collide", async () => {
-      const asset = 2;
-      const range = 1;
-      const sbtId = 1;
-
-      await zkSBT
-        .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(
-          ethers.BigNumber.from("0x" + "0" + "1".padStart(63, "0")).toString(),
-          asset,
-          range,
-          sbtId
-        );
-
-      await expect(
-        zkSBT
-          .connect(operatorOfZkSbtContract)
-          .mintWithSbtId(
-            ethers.BigNumber.from(
-              "0x" + "1" + "1".padStart(63, "0")
-            ).toString(),
-            asset,
-            range,
-            2
-          )
-      ).to.revertedWith("collision of zkAddress");
-    });
-
-    it("can't mint same SBT twice", async () => {
-      await zkSBT.connect(operatorOfZkSbtContract).mintWithSbtId(1, 2, 1, 3);
-
-      await expect(
-        zkSBT.connect(operatorOfZkSbtContract).mintWithSbtId(2, 2, 1, 3)
-      ).to.revertedWith("ERC721: token already minted");
-    });
-
-    it("ownership check", async () => {
-      const { identityCommitment, zkAddress } =
-        generateRandomIdentityCommitment();
-
-      const asset = 2;
-      const range = 1;
-      const sbtId = 4;
-
-      await zkSBT
-        .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(identityCommitment, asset, range, sbtId);
-
-      await expect(await zkSBT.ownerOf(sbtId)).to.equal(
-        ethers.utils.getAddress(zkAddress)
-      );
-    });
-
-    it("SBT metadata check", async () => {
-      const { identityCommitment, zkAddress } =
-        generateRandomIdentityCommitment();
-
-      const asset = 2;
-      const range = 1;
-      const sbtId = 5;
-
-      await zkSBT
-        .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(identityCommitment, asset, range, sbtId);
-
-      const metadata = await zkSBT.sbtMetaData(5);
-      expect(metadata[0].toString()).to.equal(asset.toString());
-      expect(metadata[1].toString()).to.equal(range.toString());
-    });
+  it("Create Pomp SDK", async function () {
+    sdk = await ZKSbtSDK.create(
+      pc.address,
+      owner,
+      resolve(P0X_DIR, "./wasm/zksbt.wasm"),
+      resolve(P0X_DIR, "./zkey/zksbt.zkey")
+    )
   });
-  describe("Token uri", async () => {
-    const baseUri = "zkSBT.metadata.manta.network/";
-    it("set base tokenUri", async () => {
-      await zkSBT.connect(operatorOfZkSbtContract).setBaseUri(baseUri);
 
-      await expect(await zkSBT.baseUri()).to.equal(baseUri);
-    });
-    it("tokenUri", async () => {
-      await zkSBT.connect(operatorOfZkSbtContract).setBaseUri(baseUri);
+  // it("Add zkSBT(type, or pomp asset/range)", async function () {
+  // });
 
-      const { identityCommitment, zkAddress } =
-        generateRandomIdentityCommitment();
+  // it("Create More Pool for zkSBT, in case merkle tree full", async function () {
+  //    // todo : merkle tree user case
+  // });
 
-      const asset = 2;
-      const range = 1;
-      const sbtId = 6;
-
-      await zkSBT
-        .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(identityCommitment, asset, range, sbtId);
-
-      await expect(await zkSBT.tokenURI(sbtId)).to.equal(
-        baseUri + sbtId.toString()
-      );
-    });
+  let sbt : SBT = pomp2sbt(ASSET.ETH, RANGE.RANGE_100)
+  let web2_certificate_signature
+  it("User Request Web2 Backend Certificate", async function () {
+    web2_certificate_signature = await sdk.get_web2_certificate(sbt)
+    console.log("web2_certificate_signature : ", web2_certificate_signature.signature)
+    expect(web2_certificate_signature.eligible).eq(true)
   });
-  describe("SBT", async () => {
-    it("SBT can't be transferred", async () => {
-      const asset = 2;
-      const range = 1;
-      const sbtId = 7;
 
-      await zkSBT
-        .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(user_2.address, asset, range, sbtId);
-
-      await expect(await zkSBT.ownerOf(sbtId)).to.equal(user_2.address);
-
-      await expect(
-        zkSBT
-          .connect(user_2)
-          .transferFrom(user_2.address, user_1.address, sbtId)
-      ).to.revertedWith("SBT can't be transferred");
-    });
+  it("Mint Pomp with certificate signature", async function () {
+    await sdk.mint(sbt,"1")
   });
-  describe("burn sbt", async () => {
-    // before(async () => {
-    //   await zkSBT
-    //     .connect(operatorOfZkSbtContract)
-    //     .mintWithSbtId(identityCommitment, asset, range, sbtId);
-    // });
-    it("only operator can burn sbt", async () => {
-      const asset = 2;
-      const range = 1;
-      const sbtId = BigNumber.from(randomHex(32));
-      await expect(
-        zkSBT
-          .connect(operatorOfZkSbtContract)
-          .mintWithSbtId(1, asset, range, sbtId)
-      );
 
-      await expect(zkSBT.connect(user_2).burn(sbtId)).to.be.revertedWith(
-        "caller is not operator"
-      );
-    });
+  it("Query zkSBT", async function () {
+    const sbts = await sdk.query_sbt_list()
+    //console.log("sbts : ", sbts)
+    expect(sbts[0].type).eq(sbt.type)
+    expect(sbts[0].asset).eq(sbt.asset)
+    expect(sbts[0].range).eq(sbt.range)
   });
-  describe("zkSBT set", async () => {
-    let baseUri: string;
-    before(async () => {
-      baseUri = "zkSBT.metadata.manta.network/";
-      await zkSBT.connect(operatorOfZkSbtContract).setBaseUri(baseUri);
-    });
-    it("mint one zkSBT, and zkSBT should be updated", async () => {
-      const { identityCommitment, zkAddress } =
-        generateRandomIdentityCommitment();
 
-      const asset = 2;
-      const range = 1;
-      const sbtId = 8;
+  let group : Group
+  it("Off-chain re-construct merkle tree Group", async function () {
+    const poolId = await pc.pools(sbt.asset, sbt.range)
+    console.log("poolId : ", poolId)
+    const onchain_root = await pc.getMerkleTreeRoot(poolId.id)
 
-      await zkSBT
-        .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(identityCommitment, asset, range, sbtId);
-
-      await expect(await zkSBT.zkAddressSbtSet(zkAddress)).to.eql([
-        [
-          BigNumber.from(sbtId),
-          BigNumber.from(asset),
-          BigNumber.from(range),
-          baseUri + sbtId.toString(),
-        ],
-      ]);
-    });
-    it("mint multi zkSBT, and zkSBT should be updated by order", async () => {
-      const { identityCommitment, zkAddress } =
-        generateRandomIdentityCommitment();
-
-      const asset_1 = 2;
-      const range_1 = 1;
-      const sbtId_1 = 9;
-
-      const asset_2 = 2;
-      const range_2 = 1;
-      const sbtId_2 = 10;
-
-      await zkSBT
-        .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(identityCommitment, asset_1, range_1, sbtId_1);
-
-      await zkSBT
-        .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(identityCommitment, asset_2, range_2, sbtId_2);
-
-      await expect(await zkSBT.zkAddressSbtSet(zkAddress)).to.eql([
-        [
-          BigNumber.from(sbtId_1),
-          BigNumber.from(asset_1),
-          BigNumber.from(range_1),
-          baseUri + sbtId_1.toString(),
-        ],
-        [
-          BigNumber.from(sbtId_2),
-          BigNumber.from(asset_2),
-          BigNumber.from(range_2),
-          baseUri + sbtId_2.toString(),
-        ],
-      ]);
-    });
-    it("after zkSBT has been burned, the zkSBT set should be updated", async () => {
-      const { identityCommitment, zkAddress } =
-        generateRandomIdentityCommitment();
-
-      const asset_1 = 2;
-      const range_1 = 1;
-      const sbtId_1 = 11;
-
-      const asset_2 = 2;
-      const range_2 = 1;
-      const sbtId_2 = 12;
-
-      await zkSBT
-        .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(identityCommitment, asset_1, range_1, sbtId_1);
-
-      await zkSBT
-        .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(identityCommitment, asset_2, range_2, sbtId_2);
-
-      await expect(await zkSBT.zkAddressSbtSet(zkAddress)).to.eql([
-        [
-          BigNumber.from(sbtId_1),
-          BigNumber.from(asset_1),
-          BigNumber.from(range_1),
-          baseUri + sbtId_1.toString(),
-        ],
-        [
-          BigNumber.from(sbtId_2),
-          BigNumber.from(asset_2),
-          BigNumber.from(range_2),
-          baseUri + sbtId_2.toString(),
-        ],
-      ]);
-
-      await zkSBT.connect(operatorOfZkSbtContract).burn(sbtId_1);
-
-      await expect(await zkSBT.zkAddressSbtSet(zkAddress)).to.eql([
-        [
-          BigNumber.from(sbtId_2),
-          BigNumber.from(asset_2),
-          BigNumber.from(range_2),
-          baseUri + sbtId_2.toString(),
-        ],
-      ]);
-    });
+    group = (await sdk.reconstructOffchainGroup(sbt, onchain_root.toBigInt())).group
   });
+
+  it("Get zkSBT Proof Key", async function () {
+    const proof_key = await sdk.getLatestProofKey(sbt)
+    console.log("proof_key : ", proof_key)
+  });
+
+  it("Off-chain Verify Pomp Membership", async function () {
+    // 3/3. generate witness, prove, verify
+    const proof =  await generateProof(
+      sdk.identity,
+      BigInt(await pc.salts(ASSET.ETH, RANGE.RANGE_100)),
+      group,
+      resolve(P0X_DIR, "./wasm/zksbt.wasm"),
+      resolve(P0X_DIR, "./zkey/zksbt.zkey")
+    )
+
+    //console.log("proof : ", proof)
+
+    // off-chain verify proof
+    const zkey_final = {
+      type : "mem",
+      data : new Uint8Array(Buffer.from(fs.readFileSync(resolve(P0X_DIR, "./zkey/zksbt.zkey"))))
+    }
+    const vKey = await snarkjs.zKey.exportVerificationKey(zkey_final);
+    expect(await snarkjs.groth16.verify(
+      vKey,
+      [
+        proof.publicSignals.merkleRoot,
+        proof.publicSignals.nullifierHash,
+        BigInt(await pc.salts(ASSET.ETH, RANGE.RANGE_100))
+      ],
+      unpackProof(proof.proof)
+    )).eq(true)
+
+    // on-chain verify
+    await (await pc.verify(
+      ASSET.ETH,
+      RANGE.RANGE_100,
+      proof.publicSignals.nullifierHash,
+      proof.proof
+    )).wait()
+
+  });
+
+  it("On-chain Verify Pomp Membership", async function () {
+    // re-construct merkle tree offline
+    const group = new Group(0, TREE_DEPTH, [sdk.identity.getCommitment()]) // group id --> root
+
+    await sdk.verify(group)
+  });
+
+
 });

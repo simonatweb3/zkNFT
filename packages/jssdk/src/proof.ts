@@ -54,8 +54,7 @@ export async function generateProof(
 ): Promise<FullProof> {
   console.log(new Date().toUTCString() + " generateProof for wasm : ", wasmFile, ", zkey : ", zkeyFile)
 
-  const pomp_commitment = identity.getCommitment()
-  const merkleProof: MerkleProof = group.generateMerkleProof(group.indexOf(pomp_commitment))
+  const merkleProof: MerkleProof = group.generateMerkleProof(group.indexOf(identity.getCommitment()))
 
   const { proof, publicSignals } = await snarkjs.groth16.fullProve(
     {

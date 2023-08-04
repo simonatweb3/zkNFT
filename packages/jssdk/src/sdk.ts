@@ -3,11 +3,11 @@ import type {BigNumber} from 'ethers'
 
 import { Identity } from "@semaphore-protocol/identity"
 import { Group } from "@semaphore-protocol/group"
-//import * as pompJson from "./ABI/Pomp.json"
+//import * as zksbtJson from "./ABI/Zksbt.json"
 import zksbtJson from "./ABI/Zksbt.json"
 import { generateProof } from "./proof"
 import { Backend } from "./backend"
-import { ASSET, claim_sbt_message, FileType, pomp2sbt, POMP_CLAIM_MESSAGE, POMP_KEY_SIGN_MESSAGE, RANGE, SBT, TREE_DEPTH } from "./common"
+import { ASSET, claim_sbt_message, FileType, pomp2sbt, ZKSBT_CLAIM_MESSAGE, ZKSBT_KEY_SIGN_MESSAGE, RANGE, SBT, TREE_DEPTH } from "./common"
 import bigInt from 'big-integer';
 
 interface eventSbtMinted {
@@ -32,8 +32,8 @@ interface IZKSbt {
 export class ZKSbtSDK implements IZKSbt {
   pc: Contract;
   signer: Signer;
-  pomp_wasm: FileType | undefined;
-  pomp_zkey: FileType | undefined;
+  zksbt_wasm: FileType | undefined;
+  zksbt_zkey: FileType | undefined;
   identity: Identity
   // on-chain merkle trees
 
@@ -42,32 +42,32 @@ export class ZKSbtSDK implements IZKSbt {
   backend : Backend
 
   private constructor(
-    pompContract: string,
+    zksbtContract: string,
     signer: Signer,
     identity: Identity
   ) {
     this.signer = signer;
-    this.pc = new ethers.Contract(pompContract, zksbtJson.abi, signer);
+    this.pc = new ethers.Contract(zksbtContract, zksbtJson.abi, signer);
     this.identity = identity
 
     this.backend = new Backend(signer);
   }
 
   public static create = async (
-    pompContract: string,
+    zksbtContract: string,
     signer: Signer,
-    pomp_wasm: FileType,
-    pomp_zkey: FileType,
+    zksbt_wasm: FileType,
+    zksbt_zkey: FileType,
   ): Promise<ZKSbtSDK> => {
     const identity = ZKSbtSDK.generateIdentity(JSON.stringify(await ZKSbtSDK.generateAccountPrivKeys(signer)))
-    const ctx = new ZKSbtSDK(pompContract, signer, identity);
-    ctx.pomp_wasm = pomp_wasm
-    ctx.pomp_zkey = pomp_zkey
+    const ctx = new ZKSbtSDK(zksbtContract, signer, identity);
+    ctx.zksbt_wasm = zksbt_wasm
+    ctx.zksbt_zkey = zksbt_zkey
     return ctx;
   };
   
   public static async generateAccountPrivKeys(signer : Signer) {
-    const signature = await signer.signMessage(POMP_KEY_SIGN_MESSAGE)
+    const signature = await signer.signMessage(ZKSBT_KEY_SIGN_MESSAGE)
     const trapdoor = ethers.utils.hexlify('0x' + signature.slice(2, 34))
     const nullifier = ethers.utils.hexlify('0x' + signature.slice(34, 66))
     return { trapdoor, nullifier };
@@ -117,7 +117,7 @@ export class ZKSbtSDK implements IZKSbt {
     sbtId : string,
     sig : string
   ) {
-    console.log("mint pomp for asset ", sbt.asset, " range ", sbt.range, " sbtId ", sbtId)
+    console.log("mint zksbt for asset ", sbt.asset, " range ", sbt.range, " sbtId ", sbtId)
     return await (await this.pc.mint(
       [this.identity.getCommitment()],
       sbt.asset,
@@ -154,8 +154,8 @@ export class ZKSbtSDK implements IZKSbt {
       this.identity,
       BigInt(await this.pc.salts(sbt.asset, sbt.range)),
       group,
-      this.pomp_wasm,
-      this.pomp_zkey
+      this.zksbt_wasm,
+      this.zksbt_zkey
     )
 
     const bytesData = ethers.utils.defaultAbiCoder.encode(
@@ -214,8 +214,8 @@ export class ZKSbtSDK implements IZKSbt {
       this.identity,
       BigInt(await this.pc.salts(ASSET.ETH, RANGE.RANGE_100)),
       group,
-      this.pomp_wasm,
-      this.pomp_zkey
+      this.zksbt_wasm,
+      this.zksbt_zkey
     )
 
     // on-chain verify

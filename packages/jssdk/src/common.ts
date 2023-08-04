@@ -1,7 +1,7 @@
 export type FileType = any;
-export const POMP_KEY_SIGN_MESSAGE =
+export const ZKSBT_KEY_SIGN_MESSAGE =
   "Sign this message to generate your Pomp Privacy Key. This key lets the application decrypt your identity on Pomp.\n\nIMPORTANT: Only sign this message if you trust the application.";
-export const POMP_CLAIM_MESSAGE = "Sign this message to claim your zkSBT : "
+export const ZKSBT_CLAIM_MESSAGE = "Sign this message to claim your zkSBT : "
 export const TREE_DEPTH = 10
 
 export enum SBT_TYPE {
@@ -39,14 +39,14 @@ export function pomp2sbt(
   return {type : SBT_TYPE.POMP, asset : asset, range : range}
 }
 
-export const POMP_CERT_SIGN_MESSAGE = "$identity $sbt_name ... $asset $range"
+export const ZKSBT_CERT_SIGN_MESSAGE = "$identity $sbt_name ... $asset $range"
 
 
 export function claim_sbt_message(
   publicAddress : string,
   sbt : SBT
 ) {
-  let SBT_CLAIM_MESSAGE = POMP_CLAIM_MESSAGE
+  let SBT_CLAIM_MESSAGE = ZKSBT_CLAIM_MESSAGE
   SBT_CLAIM_MESSAGE += " identity " + publicAddress.toString()
   SBT_CLAIM_MESSAGE += " sbt type id " + sbt.type.toString()
   SBT_CLAIM_MESSAGE += " asset type id " + sbt.asset.toString()
