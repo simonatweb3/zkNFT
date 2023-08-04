@@ -6,7 +6,7 @@ import { Group } from "@semaphore-protocol/group"
 //import * as pompJson from "./ABI/Pomp.json"
 import pompJson from "./ABI/Pomp.json"
 import { generateProof } from "./proof"
-import { PompBackend } from "./backend"
+import { Backend } from "./backend"
 import { ASSET, claim_sbt_message, FileType, pomp2sbt, POMP_CLAIM_MESSAGE, POMP_KEY_SIGN_MESSAGE, RANGE, SBT, TREE_DEPTH } from "./common"
 import bigInt from 'big-integer';
 
@@ -17,13 +17,19 @@ interface eventSbtMinted {
   sbtId: BigNumber;
 }
 
-interface IPomp {
+interface IZKSbt {
   getPublicAddress() : bigint;
-  mint: (asset: number, range: number, sbtId: string) => Promise<number>;
+  get_web2_certificate : (sbt : SBT) => Promise<{
+    eligible: boolean;
+    signature: string;
+  }>;
+  mint : (sbt : SBT, sbtId: string) => Promise<number>;
+  mintCertificateZKSBT : (sbt : SBT, sbtId: string, sig : string) => Promise<number>;
+  getLatestProofKey : (sbt : SBT) => Promise<string>;
   getProofKey : (group : Group, sbt : SBT) => Promise<string>;
 }
 
-export class PompSdk implements IPomp {
+export class ZKSbt implements IZKSbt {
   pc: Contract;
   signer: Signer;
   pomp_wasm: FileType | undefined;
@@ -33,7 +39,7 @@ export class PompSdk implements IPomp {
 
 
   // TODO : backend
-  backend : PompBackend
+  backend : Backend
 
   private constructor(
     pompContract: string,
@@ -44,7 +50,7 @@ export class PompSdk implements IPomp {
     this.pc = new ethers.Contract(pompContract, pompJson.abi, signer);
     this.identity = identity
 
-    this.backend = new PompBackend(signer);
+    this.backend = new Backend(signer);
   }
 
   public static create = async (
@@ -52,9 +58,9 @@ export class PompSdk implements IPomp {
     signer: Signer,
     pomp_wasm: FileType,
     pomp_zkey: FileType,
-  ): Promise<PompSdk> => {
-    const identity = PompSdk.generateIdentity(JSON.stringify(await PompSdk.generateAccountPrivKeys(signer)))
-    const ctx = new PompSdk(pompContract, signer, identity);
+  ): Promise<ZKSbt> => {
+    const identity = ZKSbt.generateIdentity(JSON.stringify(await ZKSbt.generateAccountPrivKeys(signer)))
+    const ctx = new ZKSbt(pompContract, signer, identity);
     ctx.pomp_wasm = pomp_wasm
     ctx.pomp_zkey = pomp_zkey
     return ctx;
@@ -84,11 +90,13 @@ export class PompSdk implements IPomp {
   public async claim_sbt_signature(
     sbt : SBT
   ) {
-    return await this.signer.signMessage(
+    const claim_sbt_signature =  await this.signer.signMessage(
       claim_sbt_message(
         this.identity.getCommitment().toString(), sbt
       )
     );
+    console.log("user claim_sbt_signature : ", claim_sbt_message)
+    return claim_sbt_signature
   }
 
   public async get_web2_certificate(
@@ -101,13 +109,32 @@ export class PompSdk implements IPomp {
       sbt,
       claim_sbt_signature
     );
+    // TODO : allocate sbt_id ?
+  }
+
+  public async mintCertificateZKSBT(
+    sbt : SBT,
+    sbtId : string,
+    sig : string
+  ) {
+    console.log("mint pomp for asset ", sbt.asset, " range ", sbt.range, " sbtId ", sbtId)
+    return await (await this.pc.mint(
+      [this.identity.getCommitment()],
+      sbt.asset,
+      sbt.range,
+      [sbtId],
+      [sig],
+      {gasLimit : 2000000})
+    ).wait()
   }
 
   // mint(user tx / server tx) a sbt on-chain (sbt[asset_id] = identity), generate a proof key for backend. 
-  public async mint(asset : ASSET, range : RANGE, sbtId : string) {
-    console.log("mint pomp for asset ", asset, " range ", range, " sbtId ", sbtId)
-    
-    return await (await this.pc.mint([this.identity.getCommitment()], asset, range, [sbtId], {gasLimit : 2000000})).wait()
+  public async mint(
+    sbt : SBT,
+    sbtId : string
+  ) {
+    const sig = await (await this.get_web2_certificate(sbt)).signature
+    return await this.mintCertificateZKSBT(sbt, sbtId, sig)
   }
 
   public async getLatestProofKey(

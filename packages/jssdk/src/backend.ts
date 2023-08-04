@@ -5,7 +5,7 @@ interface IBackend {
   //is_eligible : () => boolean
   // allocate_asset_id
 }
-export class PompBackend implements IBackend {
+export class Backend implements IBackend {
 
   signer: Signer;
   constructor(

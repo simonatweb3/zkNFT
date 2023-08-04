@@ -5,8 +5,8 @@ import * as snarkjs from "snarkjs"
 import { expect } from "chai";
 
 // browser compatible 
-import { Pomp, PompVerifier, PompVerifier__factory, Pomp__factory, PoseidonT3__factory, ZkSBT } from "../typechain-types";
-import { ASSET, generateProof, hash, PompSdk, RANGE, TREE_DEPTH, unpackProof, claim_sbt_message, pomp2sbt, SBT } from "@pomp-eth/jssdk"
+import { Pomp, PompVerifier, PompVerifier__factory, Pomp__factory, PoseidonT3__factory} from "../typechain-types";
+import { ASSET, generateProof, hash, RANGE, TREE_DEPTH, unpackProof, claim_sbt_message, pomp2sbt, SBT, ZKSbt } from "@pomp-eth/jssdk"
 import * as circomlibjs from "circomlibjs"
 import { Group } from "@semaphore-protocol/group"
 import { dnld_aws, P0X_DIR } from "./utility";
@@ -56,7 +56,7 @@ describe("Pomp", function () {
   });
 
   it("Create Pomp SDK", async function () {
-    sdk = await PompSdk.create(
+    sdk = await ZKSbt.create(
       pc.address,
       owner,
       resolve(P0X_DIR, "./wasm/pomp.wasm"),
@@ -64,38 +64,29 @@ describe("Pomp", function () {
     )
   });
 
-
-  // it("Add Asset", async function () {
+  // it("Add zkSBT(type, or pomp asset/range)", async function () {
   // });
 
-  // it("Create Pomp Pool", async function () {
+  // it("Create More Pool for zkSBT, in case merkle tree full", async function () {
+  //    // todo : merkle tree user case
   // });
-
 
   let sbt : SBT = pomp2sbt(ASSET.ETH, RANGE.RANGE_100)
   let web2_certificate_signature
-  it("Web2 Certificate", async function () {
-    const claim_sbt_signature = await sdk.claim_sbt_signature(sbt)
-    console.log("claim_sbt_signature : ", claim_sbt_signature)
-	  expect(ethers.utils.verifyMessage(
-      claim_sbt_message(sdk.identity.getCommitment().toString(), sbt),
-      claim_sbt_signature
-    )).eq(owner.address)
-
-    
+  it("User Request Web2 Backend Certificate", async function () {
     web2_certificate_signature = await sdk.get_web2_certificate(sbt)
     console.log("web2_certificate_signature : ", web2_certificate_signature.signature)
     expect(web2_certificate_signature.eligible).eq(true)
   });
 
   it("Mint Pomp with certificate signature", async function () {
-    await sdk.mint(ASSET.ETH, RANGE.RANGE_100,"1")
+    await sdk.mint(sbt,"1")
   });
-
 
   it("Query zkSBT", async function () {
     const sbts = await sdk.query_sbt_list()
-    console.log("sbts : ", sbts)
+    //console.log("sbts : ", sbts)
+    expect(sbts[0].type).eq(sbt.type)
     expect(sbts[0].asset).eq(sbt.asset)
     expect(sbts[0].range).eq(sbt.range)
   });

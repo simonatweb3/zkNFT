@@ -15,6 +15,12 @@ interface IVerifier {
   ) external view returns (bool);
 }
 
+struct Sbt {
+  uint sbt_type;  // zkBAB, zkBadger, Pomp..
+  uint asset;
+  uint range;
+}
+
 struct Pool {
   uint id;
   uint depth;
@@ -86,18 +92,23 @@ contract Pomp is SemaphoreGroups, Ownable {
     uint[] calldata identity,
     uint asset,
     uint range,
-    uint[] calldata sbtId
-    //bytes[] calldata certificate_signature
-  ) public onlyOwner {    
+    uint[] calldata sbtId,
+    bytes[] calldata certificate_signature
+  ) public onlyOwner {
+
+    string memory ZKSBT_CLAIM_MESSAGE = "Sign this message to claim your zkSBT : ";
+
     for (uint256 idx = 0; idx < identity.length; idx++) {
-      // verify server's signature.
-      // bytes memory message = bytes.concat(
-      //   "\x19Ethereum Signed Message:\n130",  // 10-th 130
-      //   "0x",
-      //   Bytes.bytesToHexASCIIBytes(orig_msg)
-      // );
-      // address signer = ECDSA.recover(keccak256(message), certificate_signature[idx]);
-      // require(signer == owner, "Invalid Certificate Signature!");
+      //verify server's signature.
+      bytes memory message = bytes.concat(
+        "\x19Ethereum Signed Message:\n130",  // 10-th 130
+        "0x",
+        "0xsign this message to claim your zkSBT : "
+        //ZKSBT_CLAIM_MESSAGE
+        //Bytes.bytesToHexASCIIBytes(ZKSBT_CLAIM_MESSAGE)
+      );
+      address signer = ECDSA.recover(keccak256(message), certificate_signature[idx]);
+      //require(signer == owner(), "Invalid Certificate Signature!");
 
       _addMember(pools[asset][range].id, identity[idx]);
 
