@@ -142,11 +142,8 @@ describe("Zksbt", function () {
   });
 
   // it("On-chain Verify Pomp Membership", async function () {
-  //   // re-construct merkle tree offline
-  //   const group = new Group(0, TREE_DEPTH, [sdk.identity.getCommitment()]) // group id --> root
-
-  //   await sdk.verify(group)
+  //   console.log("sbt : ", sbt)
+  //   await sdk.verify(sbt)
   // });
-
 
 });

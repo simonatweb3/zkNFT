@@ -202,14 +202,16 @@ export class ZKSbtSDK implements IZKSbt {
   }
 
   public async verify(
-    group : Group
+    sbt : SBT
   ) {
-    // TODO : reconstruct off-chain merkle tree, subgraph
+    const pool = await this.pc.getSbtPool(sbt.category, sbt.attribute)
+    const onchain_root = await this.pc.getMerkleTreeRoot(pool.id)
+    const group = (await this.reconstructOffchainGroup(sbt, onchain_root.toBigInt())).group
 
     // generate ZKP
     const proof =  await generateProof(
       this.identity,
-      BigInt(await this.pc.salts(ASSET.ETH, RANGE.RANGE_100)),
+      pool.salt.toBigInt(),
       group,
       this.zksbt_wasm,
       this.zksbt_zkey
@@ -217,8 +219,7 @@ export class ZKSbtSDK implements IZKSbt {
 
     // on-chain verify
     await (await this.pc.verify(
-      ASSET.ETH,
-      RANGE.RANGE_100,
+      sbt.normalize(),
       proof.publicSignals.nullifierHash,
       proof.proof
     )).wait()
