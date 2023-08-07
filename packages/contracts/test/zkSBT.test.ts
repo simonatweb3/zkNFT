@@ -100,7 +100,7 @@ describe("Zksbt", function () {
   });
 
   it("Get zkSBT Proof Key", async function () {
-    const proof_key = await sdk.getLatestProofKey(sbt)
+    const proof_key = await sdk.getProofKey(sbt)
     console.log("proof_key : ", proof_key)
   });
 

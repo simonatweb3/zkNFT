@@ -1,28 +1,43 @@
-import {ethers, Signer} from "ethers"
-import { SBT} from "./common";
+import {Contract, ethers, Signer} from "ethers"
+import {Proof } from "@semaphore-protocol/proof"
+import { FileType, SBT} from "./common";
+import zksbtJson from "./ABI/Zksbt.json"
 
 interface IBackend {
-  //is_eligible : () => boolean
-  // allocate_asset_id
+  check_eligible : (privateAddress : string, sbt : SBT) => boolean;
+  allocate_asset_id : (sbt : SBT) => bigint;
+  certificate : (publicAddress: bigint, sbt : SBT, sig : string) => 
+    Promise<{ eligible: boolean; signature: string; sbt_id: bigint; }>
+  generate_proof_key : (publicAddress : bigint, sbt : SBT, proof : Proof) => Promise<string>;
 }
 export class Backend implements IBackend {
-
+  pc: Contract;
   signer: Signer;
+  zksbt_wasm: FileType;
+  zksbt_zkey: FileType;
+
   constructor(
-    signer : Signer
+    zksbtContract: string,
+    signer : Signer,
+    zksbt_wasm: FileType,
+    zksbt_zkey: FileType,
   ) {
     this.signer = signer
+    this.pc = new ethers.Contract(zksbtContract, zksbtJson.abi, signer);
+    this.zksbt_wasm = zksbt_wasm;
+    this.zksbt_zkey = zksbt_zkey
   }
 
-  public is_eligible(
+  public check_eligible(
+    privateAddress : string,
     sbt : SBT
-  ) {
-    // TODO : check 
+  ) : boolean {
+    // TODO
     return true
   }
 
-  // TODO : backend reserve the asset id in DB
   public allocate_asset_id(sbt : SBT) : bigint {
+    // TODO
     return BigInt(5678);
     //return BigInt(Math.floor(Math.random() * Math.pow(2, 32)))
   }
@@ -37,8 +52,13 @@ export class Backend implements IBackend {
       sig
     )
 
-    // TODO : check privateAddress is eligble to sbt
-    // return {eligble : false, } if not eligble
+    if (!this.check_eligible(privateAddress, sbt)) {
+      return {
+        eligible : false,
+        signature : "",
+        sbt_id : BigInt(0)
+      }
+    }
 
     // allocate sbt_id
     const sbt_id = this.allocate_asset_id(sbt)
@@ -54,11 +74,19 @@ export class Backend implements IBackend {
     }
   }
 
-  public async set_proof_key(
+  public async generate_proof_key(
     publicAddress : bigint,
     sbt : SBT,
-    proof : string
-  ) {
-    // verify p
+    proof : Proof
+    //root : bigint
+  ) : Promise<string> {
+    // verify proof
+
+    // hash(proof, publicAddress)
+    const bytesData = ethers.utils.defaultAbiCoder.encode(
+      ["uint256[8]"],
+      [proof]
+    );
+    return ethers.utils.keccak256(bytesData); 
   }
 }

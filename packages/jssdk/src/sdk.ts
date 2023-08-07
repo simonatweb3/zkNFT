@@ -17,14 +17,14 @@ interface eventSbtMinted {
 
 interface IZKSbt {
   getPublicAddress() : bigint;
+  check_eligible : (sbt : SBT) => Promise<boolean>;
   get_web2_certificate : (sbt : SBT) => Promise<{
     eligible: boolean;
     signature: string;
   }>;
   mint : (sbt : SBT, sbtId: string) => Promise<number>;
-  mintCertificateZKSBT : (sbt : SBT, sbtId: bigint, sig : string) => Promise<number>;
-  getLatestProofKey : (sbt : SBT) => Promise<string>;
-  getProofKey : (group : Group, sbt : SBT) => Promise<string>;
+  mintCertificateZKSBT : (sbt : SBT, sig : string) => Promise<number>;
+  getProofKey : (sbt : SBT) => Promise<string>;
 }
 
 export class ZKSbtSDK implements IZKSbt {
@@ -42,13 +42,14 @@ export class ZKSbtSDK implements IZKSbt {
   private constructor(
     zksbtContract: string,
     signer: Signer,
-    identity: Identity
+    identity: Identity,
+    backend: Backend
   ) {
     this.signer = signer;
     this.pc = new ethers.Contract(zksbtContract, zksbtJson.abi, signer);
     this.identity = identity
 
-    this.backend = new Backend(signer);
+    this.backend = backend
   }
 
   public static create = async (
@@ -58,7 +59,8 @@ export class ZKSbtSDK implements IZKSbt {
     zksbt_zkey: FileType,
   ): Promise<ZKSbtSDK> => {
     const identity = ZKSbtSDK.generateIdentity(JSON.stringify(await ZKSbtSDK.generateAccountPrivKeys(signer)))
-    const ctx = new ZKSbtSDK(zksbtContract, signer, identity);
+    const backend = new Backend(zksbtContract, signer, zksbt_wasm, zksbt_zkey);
+    const ctx = new ZKSbtSDK(zksbtContract, signer, identity, backend);
     ctx.zksbt_wasm = zksbt_wasm
     ctx.zksbt_zkey = zksbt_zkey
     return ctx;
@@ -79,10 +81,10 @@ export class ZKSbtSDK implements IZKSbt {
     return this.identity.getCommitment()
   }
 
-  public is_eligible(
+  public async check_eligible(
     sbt : SBT
-  ) : boolean {
-    return this.backend.is_eligible(sbt);
+  ) : Promise<boolean> {
+    return this.backend.check_eligible(await this.signer.getAddress(), sbt);
   }
 
   public async claim_sbt_signature(
@@ -93,7 +95,6 @@ export class ZKSbtSDK implements IZKSbt {
         this.identity.getCommitment().toString()
       )
     );
-    console.log("user claim_sbt_signature : ", claim_sbt_signature)
     return claim_sbt_signature
   }
 
@@ -107,15 +108,12 @@ export class ZKSbtSDK implements IZKSbt {
       sbt,
       claim_sbt_signature
     );
-    // TODO : allocate sbt_id ?
   }
 
   public async mintCertificateZKSBT(
     sbt : SBT,
-    sbtId : bigint,
     sig : string
   ) {
-    console.log("mint zksbt for category ", sbt.category, " attribute ", sbt.attribute, " sbtId ", sbtId)
     return await (await this.pc.mint(
       [this.identity.getCommitment()],
       [sbt.normalize()],
@@ -124,25 +122,24 @@ export class ZKSbtSDK implements IZKSbt {
     ).wait()
   }
 
-  // mint(user tx / server tx) a sbt on-chain (sbt[asset_id] = identity), generate a proof key for backend. 
   public async mint(
     sbt : SBT
   ) {
     const certificate = await this.get_web2_certificate(sbt)
     sbt.setId(certificate.sbt_id)
-    return await this.mintCertificateZKSBT(sbt, certificate.sbt_id, certificate.signature)
+    return await this.mintCertificateZKSBT(sbt, certificate.signature)
   }
 
-  public async getLatestProofKey(
+  public async getProofKey(
     sbt : SBT
   ) : Promise<string> {
     const pool = await this.pc.getSbtPool(sbt.category, sbt.attribute)
     const onchain_root = await this.pc.getMerkleTreeRoot(pool.id)
     const group = (await this.reconstructOffchainGroup(sbt, onchain_root.toBigInt())).group
-    return this.getProofKey(group, sbt)
+    return this.getSpecialProofKey(group, sbt)
   }
 
-  public async getProofKey(
+  public async getSpecialProofKey(
     group : Group,
     sbt : SBT
   ) : Promise<string> {
@@ -155,14 +152,11 @@ export class ZKSbtSDK implements IZKSbt {
       this.zksbt_zkey
     )
 
-    const bytesData = ethers.utils.defaultAbiCoder.encode(
-      ["uint256[8]"],
-      [proof.proof]
-    );
-
-    // signature zkp proof --> proof key
-
-    return ethers.utils.keccak256(bytesData); 
+    return this.backend.generate_proof_key(
+      this.identity.getCommitment(),
+      sbt,
+      proof.proof
+    )
   }
 
   public async mint_and_generate_proof_key() {
