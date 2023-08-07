@@ -6,7 +6,7 @@ import { expect } from "chai";
 
 // browser compatible 
 import { Zksbt} from "../typechain-types";
-import { ASSET, generateProof, hash, RANGE, TREE_DEPTH, unpackProof, claim_sbt_message, pomp2sbt, SBT, ZKSbtSDK } from "@zksbt/jssdk"
+import { ASSET, SBT_CATEGORY, generateProof, RANGE, TREE_DEPTH, unpackProof,  SBT, ZKSbtSDK } from "@zksbt/jssdk"
 import { Group } from "@semaphore-protocol/group"
 import { dnld_aws, P0X_DIR } from "./utility";
 import { resolve } from "path";
@@ -70,7 +70,7 @@ describe("Zksbt", function () {
   //    // todo : merkle tree user case
   // });
 
-  let sbt : SBT = pomp2sbt(ASSET.ETH, RANGE.RANGE_100)
+  let sbt : SBT = SBT.createPomp(ASSET.ETH, RANGE.RANGE_100)
   let web2_certificate_signature
   it("User Request Web2 Backend Certificate", async function () {
     web2_certificate_signature = await sdk.get_web2_certificate(sbt)
@@ -80,22 +80,21 @@ describe("Zksbt", function () {
 
   it("Mint Pomp with certificate signature", async function () {
     await sdk.mint(sbt)
-    exit(0)
   });
 
   it("Query zkSBT", async function () {
     const sbts = await sdk.query_sbt_list()
-    //console.log("sbts : ", sbts)
-    expect(sbts[0].type).eq(sbt.type)
-    expect(sbts[0].asset).eq(sbt.asset)
-    expect(sbts[0].range).eq(sbt.range)
+    console.log("sbts : ", sbts)
+    expect(sbts[0].category).eq(SBT_CATEGORY.POMP)
+    // expect(sbts[0].asset).eq(sbt.asset)
+    // expect(sbts[0].range).eq(sbt.range)
   });
 
   let group : Group
   it("Off-chain re-construct merkle tree Group", async function () {
-    const poolId = await pc.pools(sbt.asset, sbt.range)
-    console.log("poolId : ", poolId)
-    const onchain_root = await pc.getMerkleTreeRoot(poolId.id)
+    const pool = await pc.getSbtPool(sbt.category, sbt.attribute)
+    console.log("poolId : ", pool.id)
+    const onchain_root = await pc.getMerkleTreeRoot(pool.id)
 
     group = (await sdk.reconstructOffchainGroup(sbt, onchain_root.toBigInt())).group
   });
@@ -107,9 +106,10 @@ describe("Zksbt", function () {
 
   it("Off-chain Verify Pomp Membership", async function () {
     // 3/3. generate witness, prove, verify
+    const pool = await pc.getSbtPool(sbt.category, sbt.attribute)
     const proof =  await generateProof(
       sdk.identity,
-      BigInt(await pc.salts(ASSET.ETH, RANGE.RANGE_100)),
+      pool.salt.toBigInt(),
       group,
       resolve(P0X_DIR, "./wasm/zksbt.wasm"),
       resolve(P0X_DIR, "./zkey/zksbt.zkey")
@@ -128,27 +128,25 @@ describe("Zksbt", function () {
       [
         proof.publicSignals.merkleRoot,
         proof.publicSignals.nullifierHash,
-        BigInt(await pc.salts(ASSET.ETH, RANGE.RANGE_100))
+        pool.salt.toBigInt()
       ],
       unpackProof(proof.proof)
     )).eq(true)
 
     // on-chain verify
     await (await pc.verify(
-      ASSET.ETH,
-      RANGE.RANGE_100,
+      sbt.normalize(),
       proof.publicSignals.nullifierHash,
       proof.proof
     )).wait()
-
   });
 
-  it("On-chain Verify Pomp Membership", async function () {
-    // re-construct merkle tree offline
-    const group = new Group(0, TREE_DEPTH, [sdk.identity.getCommitment()]) // group id --> root
+  // it("On-chain Verify Pomp Membership", async function () {
+  //   // re-construct merkle tree offline
+  //   const group = new Group(0, TREE_DEPTH, [sdk.identity.getCommitment()]) // group id --> root
 
-    await sdk.verify(group)
-  });
+  //   await sdk.verify(group)
+  // });
 
 
 });

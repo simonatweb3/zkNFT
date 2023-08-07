@@ -7,14 +7,12 @@ import { Group } from "@semaphore-protocol/group"
 import zksbtJson from "./ABI/Zksbt.json"
 import { generateProof } from "./proof"
 import { Backend } from "./backend"
-import { ASSET, claim_sbt_message, FileType, pomp2sbt, ZKSBT_KEY_SIGN_MESSAGE, RANGE, SBT, TREE_DEPTH } from "./common"
+import { ASSET, FileType, ZKSBT_KEY_SIGN_MESSAGE, RANGE, SBT, TREE_DEPTH } from "./common"
 import bigInt from 'big-integer';
 
 interface eventSbtMinted {
   identity: BigNumber;
-  asset: BigNumber;
-  range: BigNumber;
-  sbtId: BigNumber;
+  sbt: BigNumber;
 }
 
 interface IZKSbt {
@@ -91,11 +89,11 @@ export class ZKSbtSDK implements IZKSbt {
     sbt : SBT
   ) {
     const claim_sbt_signature =  await this.signer.signMessage(
-      claim_sbt_message(
-        this.identity.getCommitment().toString(), sbt
+      sbt.claim_msg(
+        this.identity.getCommitment().toString()
       )
     );
-    console.log("user claim_sbt_signature : ", claim_sbt_message)
+    console.log("user claim_sbt_signature : ", claim_sbt_signature)
     return claim_sbt_signature
   }
 
@@ -117,12 +115,10 @@ export class ZKSbtSDK implements IZKSbt {
     sbtId : bigint,
     sig : string
   ) {
-    console.log("mint zksbt for asset ", sbt.asset, " range ", sbt.range, " sbtId ", sbtId)
+    console.log("mint zksbt for category ", sbt.category, " attribute ", sbt.attribute, " sbtId ", sbtId)
     return await (await this.pc.mint(
       [this.identity.getCommitment()],
-      sbt.asset,
-      sbt.range,
-      [sbtId],
+      [sbt.normalize()],
       [sig],
       {gasLimit : 2000000})
     ).wait()
@@ -133,14 +129,15 @@ export class ZKSbtSDK implements IZKSbt {
     sbt : SBT
   ) {
     const certificate = await this.get_web2_certificate(sbt)
+    sbt.setId(certificate.sbt_id)
     return await this.mintCertificateZKSBT(sbt, certificate.sbt_id, certificate.signature)
   }
 
   public async getLatestProofKey(
     sbt : SBT
   ) : Promise<string> {
-    const poolId = await this.pc.pools(sbt.asset, sbt.range)
-    const onchain_root = await this.pc.getMerkleTreeRoot(poolId.id)
+    const pool = await this.pc.getSbtPool(sbt.category, sbt.attribute)
+    const onchain_root = await this.pc.getMerkleTreeRoot(pool.id)
     const group = (await this.reconstructOffchainGroup(sbt, onchain_root.toBigInt())).group
     return this.getProofKey(group, sbt)
   }
@@ -149,9 +146,10 @@ export class ZKSbtSDK implements IZKSbt {
     group : Group,
     sbt : SBT
   ) : Promise<string> {
+    const pool = await this.pc.getSbtPool(sbt.category, sbt.attribute)
     const proof =  await generateProof(
       this.identity,
-      BigInt(await this.pc.salts(sbt.asset, sbt.range)),
+      BigInt(pool.salt),
       group,
       this.zksbt_wasm,
       this.zksbt_zkey
@@ -190,7 +188,7 @@ export class ZKSbtSDK implements IZKSbt {
     for (let idx = 0; idx < events.length; idx++) {
       const e : eventSbtMinted = events[idx].args as unknown as eventSbtMinted;
       //console.log("e : ", e)
-      if (e.asset.eq(sbt.asset) && e.range.eq(sbt.range)) {
+      if (SBT.getMetaData(e[1]).eq(sbt.metaData())) {
         group.addMember(e[0])
         if(bigInt(group.root.toString()).eq(root)) {
           console.log("same root, merkle tree construct complete!")
@@ -236,7 +234,8 @@ export class ZKSbtSDK implements IZKSbt {
     sbt : SBT
   ) {
     // TODO : check SbtMinted event
-    return await this.pc.sbt_minted(sbt.asset, sbt.range, this.identity.getCommitment())
+    const id = await this.pc.sbt_minted(sbt.metaData(), this.identity.getCommitment())
+    return id
   }
 
   public async query_sbt_list() {
@@ -244,8 +243,10 @@ export class ZKSbtSDK implements IZKSbt {
     for(const asset in Object.values(ASSET)) {  // TODO : fix
       for(const range in Object.values(RANGE)) {
         //console.log("asset ", asset, " range ", range)
-        const sbt:SBT = pomp2sbt(Number(asset), Number(range))
-        if (await this.query_sbt(sbt)) {
+        const sbt:SBT = SBT.createPomp(Number(asset), Number(range))
+        const sbt_id = await this.query_sbt(sbt)
+        if (sbt_id > 0) {
+          sbt.setId(sbt_id)
           sbt_list.push(sbt)
         }
       }

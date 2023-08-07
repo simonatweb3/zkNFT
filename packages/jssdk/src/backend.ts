@@ -1,5 +1,5 @@
 import {ethers, Signer} from "ethers"
-import { claim_sbt_message, ZKSBT_KEY_SIGN_MESSAGE, SBT, certificate_sbt_message } from "./common";
+import { SBT} from "./common";
 
 interface IBackend {
   //is_eligible : () => boolean
@@ -33,7 +33,7 @@ export class Backend implements IBackend {
     sig : string
   ) {
     const privateAddress = ethers.utils.verifyMessage(
-      claim_sbt_message(publicAddress.toString(), sbt),
+      sbt.claim_msg(publicAddress.toString()),
       sig
     )
 
@@ -45,7 +45,7 @@ export class Backend implements IBackend {
 
     // server signature(publicAddress, sbt)
     const certificate_signature = await this.signer.signMessage(
-      certificate_sbt_message(publicAddress.toString(), sbt, sbt_id.toString())
+      sbt.certi_msg(publicAddress.toString(), sbt_id.toString())
     );
     return {
       eligible : true,

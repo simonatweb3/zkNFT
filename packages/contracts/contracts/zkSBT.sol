@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interface/sbt.sol";
+import "./spec.sol";
 import "hardhat/console.sol";
 
 interface IVerifier {
@@ -17,125 +18,137 @@ interface IVerifier {
   ) external view returns (bool);
 }
 
-// struct Sbt {
-//   uint sbt_type;  // zkBAB, zkBadger, Pomp..
-//   uint asset;
-//   uint range;
-// }
-
 struct Pool {
   uint id;
+  string name;
   uint depth;
+  uint salt;
 }
 
 contract Zksbt is SemaphoreGroups, Ownable {
+  bytes constant ZKSBT_CLAIM_MESSAGE = "Sign this meesage to claim zkSBT : ";
   uint constant POMP_POOL_DEPTH = 10;
-  uint public latestPoolId;
-  SbtInterface public Sbt;
-
-  enum ASSET {
-    ETH,
-    BNB
-    // upgradeable
-  }
-
-  enum RANGE {
-    RANGE_0, // >0, ignore?
-    RANGE_1_10, // 1~10
-    RANGE_10_100, // 10~100
-    RANGE_100 // >100
-  }
-
-  // asset_type --> asset_range --> pools)
-  mapping(uint => mapping(uint => Pool)) public pools;
-
-  // external nullifier, increase per verify
-  mapping(uint => mapping(uint => uint)) public salts; // random?
-  mapping(uint => bool) public nullifierHashes;
-
   mapping(uint256 => IVerifier) public verifiers;
 
-  event SbtMinted(uint indexed identity, uint asset, uint range, uint sbt);
+  uint public latestPoolId;
+  SbtInterface public iSbt;
+
+  // sbt(category, attr) --> pools
+  mapping(uint => Pool) public pools;
+
+  // sbt(category, attr) --> public address --> sbt_id
+  mapping(uint => mapping(uint => uint)) public sbt_minted;
+  event SbtMinted(uint indexed identity, uint sbt);
 
   event ZkSbtAddressChange(
     address indexed oldAddress,
     address indexed newAddress
   );
 
-  mapping(uint => mapping(uint => mapping(uint => bool))) public sbt_minted;
-
-  constructor(IVerifier _verifier, uint poolDepth, SbtInterface _Sbt) Ownable() {
+  constructor(
+    IVerifier _verifier,
+    uint poolDepth,
+    SbtInterface _iSbt
+  ) Ownable() {
     // zksbt verifier
     verifiers[poolDepth] = _verifier;
 
     // init build-in zksbt pool
     latestPoolId = 0;
-    createPompPool(uint(ASSET.ETH), uint(RANGE.RANGE_100), poolDepth);
-    createPompPool(uint(ASSET.BNB), uint(RANGE.RANGE_100), poolDepth);
 
-    Sbt = _Sbt;
+    _createSbtPool(pompToSbt(uint32(ASSET.ETH), uint32(RANGE.RANGE_100), 0), "POMP-ETH-RANGE_100", poolDepth);
+    _createSbtPool(pompToSbt(uint32(ASSET.BNB), uint32(RANGE.RANGE_100), 0), "POMP-BNB-RANGE_100", poolDepth);
+
+    iSbt = _iSbt;
   }
 
-  function createPompPool(uint asset, uint range, uint poolDepth) internal {
+
+  // TODO: re-entracy control
+  function _createSbtPool(
+    uint sbt,
+    string memory name,
+    uint poolDepth
+  ) internal returns (uint) {
     _createGroup(latestPoolId, poolDepth);
-    pools[asset][range] = Pool({id: latestPoolId++, depth: poolDepth});
+    pools[sbt] = Pool({
+      id: latestPoolId++,
+      name: name,
+      depth: poolDepth,
+      salt:0
+    });
+    return latestPoolId;
   }
 
-  function addAsset(
-    address token
-  )
-    public
-    // range list
-    onlyOwner
-  {}
+  function getSbtPoolV2(
+    uint sbt
+  ) public view returns (Pool memory) {
+    return pools[getSbtMeta(sbt)];
+  }
+
+  function getSbtPool(
+    uint64 category,
+    uint64 attribute
+  ) public view returns (Pool memory) {
+    return pools[category << 64 + attribute];
+  }
+
+  function createSbtPool(
+    uint sbt,
+    string calldata name,
+    uint poolDepth
+  ) public onlyOwner returns (uint) {
+    return _createSbtPool(sbt, name, poolDepth);
+  }
 
   // batch mint
   function mint(
     uint[] calldata identity,
-    uint asset,
-    uint range,
     uint[] calldata sbt,
     bytes[] calldata certificate_signature
   ) public onlyOwner {
-
-    bytes memory ZKSBT_CLAIM_MESSAGE = "Sign this meesage to claim zkSBT : ";
-
     for (uint256 idx = 0; idx < identity.length; idx++) {
       bytes memory message = bytes.concat(ZKSBT_CLAIM_MESSAGE,
         " identity ",
         bytes(Strings.toString(identity[idx])),
-        " sbt type id 2 asset type id 0 range type id 3 allocate sbt id 5678");
+        " sbt category ",
+        bytes(Strings.toString(getSbtCategory(sbt[idx]))),
+        " sbt attribute ",
+        bytes(Strings.toString(getSbtAttribute(sbt[idx]))),
+        " sbt id ",
+        bytes(Strings.toString(getSbtId(sbt[idx])))
+      );
+      // console.log("message : ");
+      // console.logBytes(message);
       bytes32 msgHash = ECDSA.toEthSignedMessageHash(message);
       address signer = ECDSA.recover(msgHash, certificate_signature[idx]);
-      console.log("signer : ", signer);
-      console.log("owner : ", owner());
       require(signer == owner(), "Invalid Certificate Signature!");
 
-      _addMember(pools[asset][range].id, identity[idx]);
+      _addMember(pools[getSbtMeta(sbt[idx])].id, identity[idx]);
 
-      sbt_minted[asset][range][identity[idx]] = true;
+      //console.log("sol meta data : ", getSbtMeta(sbt[idx]));
+      sbt_minted[getSbtMeta(sbt[idx])][identity[idx]] = getSbtId(sbt[idx]);
 
-      bool success = Sbt.mintWithSbtId(identity[idx], asset, range, sbt[idx]);
+      // TODO : normalized sbt spec
+      bool success = iSbt.mintWithSbtId(identity[idx], 0, 3, sbt[idx]);
       require(success, "failed to mint zkSBT");
 
-      emit SbtMinted(identity[idx], asset, range, sbt[idx]);
+      emit SbtMinted(identity[idx], sbt[idx]);
     }
   }
 
   // verify with given merkle root and given salt
   function verifyWithRootAndSalt(
-    uint asset,
-    uint range,
+    uint sbt,
     uint merkle_root,
     // uint verify_time,
     uint256 nullifierHash,
     uint256[8] calldata proof,
     uint salt
-  ) public {
+  ) public view {
     // check merkle_root valid, and match verify_time
 
     // now using the latest root
-    uint256 merkleTreeDepth = getMerkleTreeDepth(pools[asset][range].id);
+    uint256 merkleTreeDepth = getMerkleTreeDepth(getSbtPoolV2(sbt).id);
     uint256[] memory inputs = new uint256[](3);
     inputs[0] = merkle_root;
     inputs[1] = nullifierHash;
@@ -152,31 +165,31 @@ contract Zksbt is SemaphoreGroups, Ownable {
 
   // verify with on-chain latest merkle tree and given salt
   function verifyWithSalt(
-    uint asset,
-    uint range,
+    uint sbt,
     uint256 nullifierHash,
     uint256[8] calldata proof,
     uint salt
   ) public {
-    uint256 merkleTreeRoot = getMerkleTreeRoot(pools[asset][range].id);
-    verifyWithRootAndSalt(asset, range, merkleTreeRoot, nullifierHash, proof, salt);
+    uint256 merkleTreeRoot = getMerkleTreeRoot(getSbtPoolV2(sbt).id);
+    verifyWithRootAndSalt(sbt, merkleTreeRoot, nullifierHash, proof, salt);
   }
 
   // verify with on-chain latest merkle tree and on-chain salt
   function verify(
-    uint asset,
-    uint range,
+    uint sbt,
     uint256 nullifierHash,
     uint256[8] calldata proof
   ) public {
-    uint256 merkleTreeRoot = getMerkleTreeRoot(pools[asset][range].id);
-    verifyWithRootAndSalt(asset, range, merkleTreeRoot, nullifierHash, proof, salts[asset][range]);
-    // random change salts[asset][range]?
+    uint256 merkleTreeRoot = getMerkleTreeRoot(getSbtPoolV2(sbt).id);
+    verifyWithRootAndSalt(sbt, merkleTreeRoot, nullifierHash, proof, getSbtPoolV2(sbt).salt);
+
+    // random change salts[asset][range] to avoid proof conflict
+    pools[getSbtMeta(sbt)].salt += 1;
   }
 
   function setZkSbtAddress(address _newZkSbtAddress) public onlyOwner {
-    address oldZkSbtAddress = address(Sbt);
-    Sbt = SbtInterface(_newZkSbtAddress);
+    address oldZkSbtAddress = address(iSbt);
+    iSbt = SbtInterface(_newZkSbtAddress);
     emit ZkSbtAddressChange(oldZkSbtAddress, _newZkSbtAddress);
   }
 }
