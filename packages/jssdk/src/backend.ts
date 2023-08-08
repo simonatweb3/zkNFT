@@ -10,7 +10,7 @@ interface IBackend {
     Promise<{ eligible: boolean; signature: string; sbt_id: bigint; }>
   mint : (publicAddress: bigint, sbt : SBT, sig : string) => 
     Promise<{ eligible: boolean; sbt_id: bigint; }>
-  generate_proof_key : (publicAddress : bigint, sbt : SBT, proof : Proof) => Promise<string>;
+  generate_proof_key : (publicAddress : bigint, sbt : SBT, salt : bigint, proof : Proof) => Promise<string>;
 }
 export class Backend implements IBackend {
   pc: Contract;
@@ -103,18 +103,27 @@ export class Backend implements IBackend {
     }
   }
 
+  public async alloc_proof_key_salt(
+    sbt : SBT
+  ) {
+    // TODO
+    const pool = await this.pc.getSbtPool(sbt.category, sbt.attribute)
+    return pool.salt
+  }
+
   public async generate_proof_key(
     publicAddress : bigint,
     sbt : SBT,
+    salt : bigint,
     proof : Proof
     //root : bigint
   ) : Promise<string> {
-    // verify proof
+    // TODO : verify proof
 
     // hash(proof, publicAddress)
     const bytesData = ethers.utils.defaultAbiCoder.encode(
-      ["uint256[8]"],
-      [proof]
+      ["uint256[8]", "uint256", "uint256", "uint256"],
+      [proof, publicAddress, sbt.normalize(), salt]
     );
     return ethers.utils.keccak256(bytesData); 
   }

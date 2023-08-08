@@ -166,6 +166,7 @@ export class ZKSbtSDK implements IZKSbt {
     return this.backend.generate_proof_key(
       this.identity.getCommitment(),
       sbt,
+      pool.salt,
       proof.proof
     )
   }
