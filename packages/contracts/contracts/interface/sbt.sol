@@ -5,7 +5,7 @@ pragma solidity >=0.7.0 <0.9.0;
  * @title zkSBT interface
  * @notice Contains the minimum interfaces needed to interact with zkSBT.
  */
-interface ZkSbtInterface {
+interface SbtInterface {
   /**
    * @dev Allows an operator to mint zkSBT and initialize corresponding info.
    *

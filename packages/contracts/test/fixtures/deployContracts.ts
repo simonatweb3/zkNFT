@@ -19,7 +19,7 @@ export async function deployContracts(owner : SignerWithAddress) {
 
   // deploy zkSBT
   const ZkSBTFactory = await ethers.getContractFactory(
-    "ZkSBT",
+    "Sbt",
     owner
   );
 

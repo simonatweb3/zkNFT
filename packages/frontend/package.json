@@ -1,4 +1,4 @@
 {
-  "name": "@pomp-eth/frontend",
+  "name": "@zksbt/frontend",
   "packageManager": "yarn@3.5.0"
 }

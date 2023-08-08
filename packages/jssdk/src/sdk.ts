@@ -3,65 +3,71 @@ import type {BigNumber} from 'ethers'
 
 import { Identity } from "@semaphore-protocol/identity"
 import { Group } from "@semaphore-protocol/group"
-//import * as pompJson from "./ABI/Pomp.json"
-import pompJson from "./ABI/Pomp.json"
+//import * as zksbtJson from "./ABI/Zksbt.json"
+import zksbtJson from "./ABI/Zksbt.json"
 import { generateProof } from "./proof"
-import { PompBackend } from "./backend"
-import { ASSET, claim_sbt_message, FileType, pomp2sbt, POMP_CLAIM_MESSAGE, POMP_KEY_SIGN_MESSAGE, RANGE, SBT, TREE_DEPTH } from "./common"
+import { Backend } from "./backend"
+import { ASSET, FileType, ZKSBT_KEY_SIGN_MESSAGE, RANGE, SBT, TREE_DEPTH } from "./common"
 import bigInt from 'big-integer';
 
 interface eventSbtMinted {
   identity: BigNumber;
-  asset: BigNumber;
-  range: BigNumber;
-  sbtId: BigNumber;
+  sbt: BigNumber;
 }
 
-interface IPomp {
+interface IZKSbt {
   getPublicAddress() : bigint;
-  mint: (asset: number, range: number, sbtId: string) => Promise<number>;
-  getProofKey : (group : Group, sbt : SBT) => Promise<string>;
+  check_eligible : (sbt : SBT) => Promise<boolean>;
+  get_web2_certificate : (sbt : SBT) => Promise<{
+    eligible: boolean;
+    signature: string;
+  }>;
+  mint : (sbt : SBT, sbtId: string) => Promise<number>;
+  mintCertificateZKSBT : (sbt : SBT, sig : string) => Promise<number>;
+  getProofKey : (sbt : SBT) => Promise<string>;
 }
 
-export class PompSdk implements IPomp {
+export class ZKSbtSDK implements IZKSbt {
   pc: Contract;
   signer: Signer;
-  pomp_wasm: FileType | undefined;
-  pomp_zkey: FileType | undefined;
+  zksbt_wasm: FileType | undefined;
+  zksbt_zkey: FileType | undefined;
   identity: Identity
   // on-chain merkle trees
 
 
   // TODO : backend
-  backend : PompBackend
+  backend : Backend
 
   private constructor(
-    pompContract: string,
+    zksbtContract: string,
     signer: Signer,
-    identity: Identity
+    identity: Identity,
+    backend: Backend
   ) {
     this.signer = signer;
-    this.pc = new ethers.Contract(pompContract, pompJson.abi, signer);
+    this.pc = new ethers.Contract(zksbtContract, zksbtJson.abi, signer);
     this.identity = identity
 
-    this.backend = new PompBackend(signer);
+    this.backend = backend
   }
 
   public static create = async (
-    pompContract: string,
+    zksbtContract: string,
     signer: Signer,
-    pomp_wasm: FileType,
-    pomp_zkey: FileType,
-  ): Promise<PompSdk> => {
-    const identity = PompSdk.generateIdentity(JSON.stringify(await PompSdk.generateAccountPrivKeys(signer)))
-    const ctx = new PompSdk(pompContract, signer, identity);
-    ctx.pomp_wasm = pomp_wasm
-    ctx.pomp_zkey = pomp_zkey
+    zksbt_wasm: FileType,
+    zksbt_zkey: FileType,
+  ): Promise<ZKSbtSDK> => {
+    const identity = ZKSbtSDK.generateIdentity(JSON.stringify(await ZKSbtSDK.generateAccountPrivKeys(signer)))
+    const backend = new Backend(zksbtContract, signer, zksbt_wasm, zksbt_zkey);
+    const ctx = new ZKSbtSDK(zksbtContract, signer, identity, backend);
+    ctx.zksbt_wasm = zksbt_wasm
+    ctx.zksbt_zkey = zksbt_zkey
     return ctx;
   };
   
   public static async generateAccountPrivKeys(signer : Signer) {
-    const signature = await signer.signMessage(POMP_KEY_SIGN_MESSAGE)
+    const signature = await signer.signMessage(ZKSBT_KEY_SIGN_MESSAGE)
     const trapdoor = ethers.utils.hexlify('0x' + signature.slice(2, 34))
     const nullifier = ethers.utils.hexlify('0x' + signature.slice(34, 66))
     return { trapdoor, nullifier };
@@ -75,20 +81,21 @@ export class PompSdk implements IPomp {
     return this.identity.getCommitment()
   }
 
-  public is_eligible(
+  public async check_eligible(
     sbt : SBT
-  ) : boolean {
-    return this.backend.is_eligible(sbt);
+  ) : Promise<boolean> {
+    return this.backend.check_eligible(await this.signer.getAddress(), sbt);
   }
 
   public async claim_sbt_signature(
     sbt : SBT
   ) {
-    return await this.signer.signMessage(
-      claim_sbt_message(
-        this.identity.getCommitment().toString(), sbt
+    const claim_sbt_signature =  await this.signer.signMessage(
+      sbt.claim_msg(
+        this.identity.getCommitment().toString()
       )
     );
+    return claim_sbt_signature
   }
 
   public async get_web2_certificate(
@@ -103,42 +110,65 @@ export class PompSdk implements IPomp {
     );
   }
 
-  // mint(user tx / server tx) a sbt on-chain (sbt[asset_id] = identity), generate a proof key for backend. 
-  public async mint(asset : ASSET, range : RANGE, sbtId : string) {
-    console.log("mint pomp for asset ", asset, " range ", range, " sbtId ", sbtId)
-    
-    return await (await this.pc.mint([this.identity.getCommitment()], asset, range, [sbtId], {gasLimit : 2000000})).wait()
+  public async mintCertificateZKSBT(
+    sbt : SBT,
+    sig : string
+  ) {
+    return await (await this.pc.mint(
+      [this.identity.getCommitment()],
+      [sbt.normalize()],
+      [sig],
+      {gasLimit : 2000000})
+    ).wait()
   }
 
-  public async getLatestProofKey(
+  public async mint(
     sbt : SBT
-  ) : Promise<string> {
-    const poolId = await this.pc.pools(sbt.asset, sbt.range)
-    const onchain_root = await this.pc.getMerkleTreeRoot(poolId.id)
-    const group = (await this.reconstructOffchainGroup(sbt, onchain_root.toBigInt())).group
-    return this.getProofKey(group, sbt)
+  ) {
+    const certificate = await this.get_web2_certificate(sbt)
+    sbt.setId(certificate.sbt_id)
+    return await this.mintCertificateZKSBT(sbt, certificate.signature)
+  }
+
+  public async mintFromBackend(
+    sbt : SBT
+  ) {
+    const claim_sbt_signature = await this.claim_sbt_signature(sbt)
+    return await this.backend.mint(
+      this.identity.getCommitment(),
+      sbt,
+      claim_sbt_signature
+    )
   }
 
   public async getProofKey(
+    sbt : SBT
+  ) : Promise<string> {
+    const pool = await this.pc.getSbtPool(sbt.category, sbt.attribute)
+    const onchain_root = await this.pc.getMerkleTreeRoot(pool.id)
+    const group = (await this.reconstructOffchainGroup(sbt, onchain_root.toBigInt())).group
+    return this.getSpecialProofKey(group, sbt)
+  }
+
+  public async getSpecialProofKey(
     group : Group,
     sbt : SBT
   ) : Promise<string> {
+    const pool = await this.pc.getSbtPool(sbt.category, sbt.attribute)
     const proof =  await generateProof(
       this.identity,
-      BigInt(await this.pc.salts(sbt.asset, sbt.range)),
+      BigInt(pool.salt),
       group,
-      this.pomp_wasm,
-      this.pomp_zkey
+      this.zksbt_wasm,
+      this.zksbt_zkey
     )
 
-    const bytesData = ethers.utils.defaultAbiCoder.encode(
-      ["uint256[8]"],
-      [proof.proof]
-    );
-
-    // signature zkp proof --> proof key
-
-    return ethers.utils.keccak256(bytesData); 
+    return this.backend.generate_proof_key(
+      this.identity.getCommitment(),
+      sbt,
+      pool.salt,
+      proof.proof
+    )
   }
 
   public async mint_and_generate_proof_key() {
@@ -163,8 +193,8 @@ export class PompSdk implements IPomp {
     // add member to group, until root match
     for (let idx = 0; idx < events.length; idx++) {
       const e : eventSbtMinted = events[idx].args as unknown as eventSbtMinted;
-      console.log("e : ", e)
-      if (e.asset.eq(sbt.asset) && e.range.eq(sbt.range)) {
+      //console.log("e : ", e)
+      if (SBT.getMetaData(e[1]).eq(sbt.metaData())) {
         group.addMember(e[0])
         if(bigInt(group.root.toString()).eq(root)) {
           console.log("same root, merkle tree construct complete!")
@@ -178,23 +208,24 @@ export class PompSdk implements IPomp {
   }
 
   public async verify(
-    group : Group
+    sbt : SBT
   ) {
-    // TODO : reconstruct off-chain merkle tree, subgraph
+    const pool = await this.pc.getSbtPool(sbt.category, sbt.attribute)
+    const onchain_root = await this.pc.getMerkleTreeRoot(pool.id)
+    const group = (await this.reconstructOffchainGroup(sbt, onchain_root.toBigInt())).group
 
     // generate ZKP
     const proof =  await generateProof(
       this.identity,
-      BigInt(await this.pc.salts(ASSET.ETH, RANGE.RANGE_100)),
+      pool.salt.toBigInt(),
       group,
-      this.pomp_wasm,
-      this.pomp_zkey
+      this.zksbt_wasm,
+      this.zksbt_zkey
     )
 
     // on-chain verify
     await (await this.pc.verify(
-      ASSET.ETH,
-      RANGE.RANGE_100,
+      sbt.normalize(),
       proof.publicSignals.nullifierHash,
       proof.proof
     )).wait()
@@ -210,7 +241,8 @@ export class PompSdk implements IPomp {
     sbt : SBT
   ) {
     // TODO : check SbtMinted event
-    return await this.pc.sbt_minted(sbt.asset, sbt.range, this.identity.getCommitment())
+    const id = await this.pc.sbt_minted(sbt.metaData(), this.identity.getCommitment())
+    return id
   }
 
   public async query_sbt_list() {
@@ -218,8 +250,10 @@ export class PompSdk implements IPomp {
     for(const asset in Object.values(ASSET)) {  // TODO : fix
       for(const range in Object.values(RANGE)) {
         //console.log("asset ", asset, " range ", range)
-        const sbt:SBT = pomp2sbt(Number(asset), Number(range))
-        if (await this.query_sbt(sbt)) {
+        const sbt:SBT = SBT.createPomp(Number(asset), Number(range))
+        const sbt_id = await this.query_sbt(sbt)
+        if (sbt_id > 0) {
+          sbt.setId(sbt_id)
           sbt_list.push(sbt)
         }
       }

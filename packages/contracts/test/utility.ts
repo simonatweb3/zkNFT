@@ -5,8 +5,8 @@ import * as https from "https"
 import * as os from "os"
 
 const HOME_DIR = os.homedir();
-export const P0X_DIR = resolve(HOME_DIR, "./.poseidon-zkp/pomp");
-export const P0X_AWS_URL = "https://p0x-labs.s3.amazonaws.com/pomp/";
+export const P0X_DIR = resolve(HOME_DIR, "./.poseidon-zkp/zksbt");
+export const P0X_AWS_URL = "https://p0x-labs.s3.amazonaws.com/zksbt/";
 export function dnld_aws(file_name: string) {
   fs.mkdir(resolve(HOME_DIR, "./.poseidon-zkp"), () => {/* eslint-disable no-empty-function */});
   fs.mkdir(P0X_DIR, () => {/* eslint-disable no-empty-function */});

@@ -1,194 +1,196 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity >=0.7.0 <0.9.0;
 
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@semaphore-protocol/contracts/base/SemaphoreGroups.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+import "./interface/sbt.sol";
+import "./spec.sol";
+import "hardhat/console.sol";
 
-contract ZkSBT is ERC721URIStorage, Ownable {
-  using EnumerableSet for EnumerableSet.UintSet;
+interface IVerifier {
+  function verifyProof(
+    uint256[2] memory a,
+    uint256[2][2] memory b,
+    uint256[2] memory c,
+    uint256[] memory input
+  ) external view returns (bool);
+}
 
-  // operators allowed to mint SBT
-  mapping(address => bool) public operators;
+struct Pool {
+  uint id;
+  string name;
+  uint depth;
+  uint salt;
+}
 
-  // sbt tokenId => sbt's metaData
-  mapping(uint256 => MetaData) public sbtMetaData;
+contract Zksbt is SemaphoreGroups, Ownable {
+  bytes constant ZKSBT_CLAIM_MESSAGE = "Sign this meesage to claim zkSBT : ";
+  uint constant POMP_POOL_DEPTH = 10;
+  mapping(uint256 => IVerifier) public verifiers;
 
-  // zkAddress => identityCommitment, to check potential collision
-  mapping(address => uint256) public zkAddressPreImage;
+  uint public latestPoolId;
+  SbtInterface public iSbt;
 
-  // zkAddress => zkSbt set
-  mapping(address => EnumerableSet.UintSet) private _zkSbtSet;
+  // sbt(category, attr) --> pools
+  mapping(uint => Pool) public pools;
 
-  string public baseUri;
+  // sbt(category, attr) --> public address --> sbt_id
+  mapping(uint => mapping(uint => uint)) public sbt_minted;
+  event SbtMinted(uint indexed identity, uint sbt);
 
-  event OperatorChange(address indexed _operator, bool indexed _allowed);
-
-  event MintIdStatusChange(uint256 indexed _mintId, bool indexed _open);
-
-  event MintZkSBT(
-    uint256 indexed _identityCommitment,
-    uint256 indexed asset,
-    uint256 range,
-    uint256 indexed tokenId
+  event ZkSbtAddressChange(
+    address indexed oldAddress,
+    address indexed newAddress
   );
 
-  modifier onlyOperator() {
-    require(
-      operators[msg.sender] || msg.sender == owner(),
-      "caller is not operator"
-    );
-    _;
+  constructor(
+    IVerifier _verifier,
+    uint poolDepth,
+    SbtInterface _iSbt
+  ) Ownable() {
+    // zksbt verifier
+    verifiers[poolDepth] = _verifier;
+
+    // init build-in zksbt pool
+    latestPoolId = 0;
+
+    _createSbtPool(pompToSbt(uint32(ASSET.ETH), uint32(RANGE.RANGE_100), 0), "POMP-ETH-RANGE_100", poolDepth);
+    _createSbtPool(pompToSbt(uint32(ASSET.BNB), uint32(RANGE.RANGE_100), 0), "POMP-BNB-RANGE_100", poolDepth);
+
+    iSbt = _iSbt;
   }
 
-  // metadata of SBT
-  struct MetaData {
-    uint256 asset; // used to distinguish different asset
-    uint256 range;
+
+  // TODO: re-entracy control
+  function _createSbtPool(
+    uint sbt,
+    string memory name,
+    uint poolDepth
+  ) internal returns (uint) {
+    _createGroup(latestPoolId, poolDepth);
+    pools[sbt] = Pool({
+      id: latestPoolId++,
+      name: name,
+      depth: poolDepth,
+      salt:0
+    });
+    return latestPoolId;
   }
 
-  // tokenId and MetaData information
-  struct TokenIdWithMetadata {
-    uint256 tokenId;
-    uint256 asset; // used to distinguish different asset
-    uint256 range;
-    string uri;
+  function getSbtPoolV2(
+    uint sbt
+  ) public view returns (Pool memory) {
+    return pools[getSbtMeta(sbt)];
   }
 
-  constructor() ERC721("ZkSBT", "ZkSBT") {}
-
-  // override _transfer to prevent SBT from being transferred
-  function _transfer(
-    address from,
-    address to,
-    uint256 tokenId
-  ) internal pure override {
-    from;
-    to;
-    tokenId;
-    revert("SBT can't be transferred");
+  function getSbtPool(
+    uint64 category,
+    uint64 attribute
+  ) public view returns (Pool memory) {
+    return pools[category << 64 + attribute];
   }
 
-  function mintWithSbtId(
-    uint256 identityCommitment, //record identity commitment of user
-    uint256 asset, //asset type, which is enumeration
-    uint256 range,
-    uint256 sbtId //sbt id in the per sbt identity
-  ) public onlyOperator returns (bool) {
-    // check identityCommitment is not 0
-    require(identityCommitment != 0, "invalid identityCommitment");
-
-    // the tokenId to be minted i sbtId
-    uint256 tokenId = sbtId;
-
-    // generate zk address from identityCommitment
-    address zkAddress = address(uint160(identityCommitment));
-
-    // check availability of zkAddress
-    checkZkAddressAvailabilty(zkAddress, identityCommitment);
-    // mint sbt
-    _safeMint(zkAddress, tokenId);
-
-    // update zkSBT set
-    _zkSbtSet[zkAddress].add(tokenId);
-
-    sbtMetaData[tokenId] = MetaData(asset, range);
-
-    emit MintZkSBT(identityCommitment, asset, range, tokenId);
-    return true;
+  function createSbtPool(
+    uint sbt,
+    string calldata name,
+    uint poolDepth
+  ) public onlyOwner returns (uint) {
+    return _createSbtPool(sbt, name, poolDepth);
   }
 
-  // check whether zkAddresses have collision
-  function checkZkAddressAvailabilty(
-    address zkAddress,
-    uint256 identityCommitment
-  ) internal returns (bool) {
-    uint256 preimage = zkAddressPreImage[zkAddress];
-    if (preimage == 0) {
-      zkAddressPreImage[zkAddress] = identityCommitment;
-    } else {
-      require(identityCommitment == preimage, "collision of zkAddress");
-    }
-
-    return true;
-  }
-
-  /**
-   * @dev Approve `operator` to mint zkSBT
-   *
-   * Emits an {ApprovalForAll} event.
-   */
-  function setOperator(
-    address operator,
-    bool approved
-  ) public virtual onlyOwner {
-    operators[operator] = approved;
-    emit OperatorChange(operator, approved);
-  }
-
-  /**
-   * @dev Base URI for computing {tokenURI}.
-   */
-  function _baseURI() internal view override returns (string memory) {
-    return baseUri;
-  }
-
-  /**
-   * @dev set base Uri
-   */
-  function setBaseUri(
-    string memory _baseUri
-  ) external onlyOperator returns (bool) {
-    baseUri = _baseUri;
-    return true;
-  }
-
-  /**
-   * @dev set base Uri
-   * @param _zkAddress the zkAddress to query for zkSbt set
-   * @return data      information of the zkSbt set of the _zkAddress
-   */
-  function zkAddressSbtSet(
-    address _zkAddress
-  ) public view returns (TokenIdWithMetadata[] memory data) {
-    EnumerableSet.UintSet storage zkSbtSet = _zkSbtSet[_zkAddress];
-
-    bytes32[] memory valueLs = zkSbtSet._inner._values;
-
-    uint256 l = valueLs.length;
-
-    data = new TokenIdWithMetadata[](l);
-
-    for (uint i; i < l; i++) {
-      uint256 tokenId = uint256(valueLs[i]);
-      MetaData memory metaData = sbtMetaData[tokenId];
-      string memory tokenUri = tokenURI(tokenId);
-      data[i] = TokenIdWithMetadata(
-        tokenId,
-        metaData.asset,
-        metaData.range,
-        tokenUri
+  // batch mint
+  function mint(
+    uint[] calldata identity,
+    uint[] calldata sbt,
+    bytes[] calldata certificate_signature
+  ) public onlyOwner {
+    for (uint256 idx = 0; idx < identity.length; idx++) {
+      bytes memory message = bytes.concat(ZKSBT_CLAIM_MESSAGE,
+        " identity ",
+        bytes(Strings.toString(identity[idx])),
+        " sbt category ",
+        bytes(Strings.toString(getSbtCategory(sbt[idx]))),
+        " sbt attribute ",
+        bytes(Strings.toString(getSbtAttribute(sbt[idx]))),
+        " sbt id ",
+        bytes(Strings.toString(getSbtId(sbt[idx])))
       );
+      console.log("getSbtId : ", getSbtId(sbt[idx]));
+      // console.log("message : ");
+      // console.logBytes(message);
+      bytes32 msgHash = ECDSA.toEthSignedMessageHash(message);
+      address signer = ECDSA.recover(msgHash, certificate_signature[idx]);
+      require(signer == owner(), "Invalid Certificate Signature!");
+
+      _addMember(pools[getSbtMeta(sbt[idx])].id, identity[idx]);
+
+      //console.log("sol meta data : ", getSbtMeta(sbt[idx]));
+      sbt_minted[getSbtMeta(sbt[idx])][identity[idx]] = getSbtId(sbt[idx]);
+
+      // TODO : normalized sbt spec
+      bool success = iSbt.mintWithSbtId(identity[idx], 0, 3, sbt[idx]);
+      require(success, "failed to mint zkSBT");
+
+      emit SbtMinted(identity[idx], sbt[idx]);
     }
-
-    return data;
   }
 
-  function burn(uint256 tokenId) public onlyOperator {
-    _burn(tokenId);
+  // verify with given merkle root and given salt
+  function verifyWithRootAndSalt(
+    uint sbt,
+    uint merkle_root,
+    // uint verify_time,
+    uint256 nullifierHash,
+    uint256[8] calldata proof,
+    uint salt
+  ) public view {
+    // check merkle_root valid, and match verify_time
+
+    // now using the latest root
+    uint256 merkleTreeDepth = getMerkleTreeDepth(getSbtPoolV2(sbt).id);
+    uint256[] memory inputs = new uint256[](3);
+    inputs[0] = merkle_root;
+    inputs[1] = nullifierHash;
+    inputs[2] = salt;
+    bool valid = verifiers[merkleTreeDepth].verifyProof(
+      [proof[0], proof[1]],
+      [[proof[2], proof[3]], [proof[4], proof[5]]],
+      [proof[6], proof[7]],
+      inputs
+    );
+    require(valid, "proof invalid!");
+
   }
 
-  /**
-   * @dev See {ERC721URIStorage-_burn}. This override additionally delete the tokenId stored in EnumerableSet
-   */
-  function _burn(uint256 tokenId) internal virtual override {
-    // before delete the owner record, first update the enumerable set of the owner
-    address owner = ownerOf(tokenId);
-    _zkSbtSet[owner].remove(tokenId);
+  // verify with on-chain latest merkle tree and given salt
+  function verifyWithSalt(
+    uint sbt,
+    uint256 nullifierHash,
+    uint256[8] calldata proof,
+    uint salt
+  ) public {
+    uint256 merkleTreeRoot = getMerkleTreeRoot(getSbtPoolV2(sbt).id);
+    verifyWithRootAndSalt(sbt, merkleTreeRoot, nullifierHash, proof, salt);
+  }
 
-    // delete sbt's metaData
-    delete sbtMetaData[tokenId];
+  // verify with on-chain latest merkle tree and on-chain salt
+  function verify(
+    uint sbt,
+    uint256 nullifierHash,
+    uint256[8] calldata proof
+  ) public {
+    uint256 merkleTreeRoot = getMerkleTreeRoot(getSbtPoolV2(sbt).id);
+    verifyWithRootAndSalt(sbt, merkleTreeRoot, nullifierHash, proof, getSbtPoolV2(sbt).salt);
 
-    super._burn(tokenId);
+    // random change salts[asset][range] to avoid proof conflict
+    pools[getSbtMeta(sbt)].salt += 1;
+  }
+
+  function setZkSbtAddress(address _newZkSbtAddress) public onlyOwner {
+    address oldZkSbtAddress = address(iSbt);
+    iSbt = SbtInterface(_newZkSbtAddress);
+    emit ZkSbtAddressChange(oldZkSbtAddress, _newZkSbtAddress);
   }
 }
