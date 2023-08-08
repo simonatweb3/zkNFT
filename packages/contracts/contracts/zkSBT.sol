@@ -86,7 +86,6 @@ contract ZkSBT is ERC721URIStorage, Ownable {
 
     // check availability of zkAddress
     checkZkAddressAvailabilty(zkAddress, identityCommitment);
-
     // mint sbt
     _safeMint(zkAddress, tokenId);
 
