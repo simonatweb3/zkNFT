@@ -117,6 +117,7 @@ contract Zksbt is SemaphoreGroups, Ownable {
         " sbt id ",
         bytes(Strings.toString(getSbtId(sbt[idx])))
       );
+      console.log("getSbtId : ", getSbtId(sbt[idx]));
       // console.log("message : ");
       // console.logBytes(message);
       bytes32 msgHash = ECDSA.toEthSignedMessageHash(message);

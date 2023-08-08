@@ -8,6 +8,8 @@ interface IBackend {
   allocate_asset_id : (sbt : SBT) => bigint;
   certificate : (publicAddress: bigint, sbt : SBT, sig : string) => 
     Promise<{ eligible: boolean; signature: string; sbt_id: bigint; }>
+  mint : (publicAddress: bigint, sbt : SBT, sig : string) => 
+    Promise<{ eligible: boolean; sbt_id: bigint; }>
   generate_proof_key : (publicAddress : bigint, sbt : SBT, proof : Proof) => Promise<string>;
 }
 export class Backend implements IBackend {
@@ -38,9 +40,36 @@ export class Backend implements IBackend {
 
   public allocate_asset_id(sbt : SBT) : bigint {
     // TODO
-    return BigInt(5678);
-    //return BigInt(Math.floor(Math.random() * Math.pow(2, 32)))
+    //return BigInt(5678);
+    return BigInt(Math.floor(Math.random() * Math.pow(2, 32)))
   }
+
+  public async mint(
+    publicAddress : bigint,
+    sbt : SBT,
+    sig : string
+  ) {
+    const cert = await this.certificate(
+      publicAddress,
+      sbt,
+      sig
+    );
+
+    console.log("cert ", cert)
+    sbt.setId(cert.sbt_id)
+    await (await this.pc.mint(
+      [publicAddress],
+      [sbt.normalize()],
+      [cert.signature],
+      {gasLimit : 2000000})
+    ).wait()
+
+    return {
+      eligible : true,
+      sbt_id : cert.sbt_id
+    }
+  }
+
 
   public async certificate(
     publicAddress : bigint,

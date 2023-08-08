@@ -130,6 +130,17 @@ export class ZKSbtSDK implements IZKSbt {
     return await this.mintCertificateZKSBT(sbt, certificate.signature)
   }
 
+  public async mintFromBackend(
+    sbt : SBT
+  ) {
+    const claim_sbt_signature = await this.claim_sbt_signature(sbt)
+    return await this.backend.mint(
+      this.identity.getCommitment(),
+      sbt,
+      claim_sbt_signature
+    )
+  }
+
   public async getProofKey(
     sbt : SBT
   ) : Promise<string> {

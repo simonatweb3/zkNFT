@@ -146,4 +146,14 @@ describe("Zksbt", function () {
   //   await sdk.verify(sbt)
   // });
 
+  let sbt_zkbab : SBT = SBT.create(SBT_CATEGORY.ZKBAB)
+  it("add ZKBAB Pool", async function () {
+    await (await pc.createSbtPool(sbt_zkbab.normalize(), "ZKBAB", 10)).wait()
+  });
+
+  it("mint sbt from backend", async function () {
+    const res = await sdk.mintFromBackend(sbt_zkbab)
+    console.log("mint res : ", res)
+  });
+
 });
