@@ -31,6 +31,7 @@ describe("Zksbt", function () {
   before(async () => {
     signers = await ethers.getSigners()
     owner = signers[0];   // TODO : why not 10
+    console.log("owner : ", owner.address)
     await Promise.all(
       [
         "wasm/zksbt.wasm",

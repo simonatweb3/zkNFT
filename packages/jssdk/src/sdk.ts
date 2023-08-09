@@ -95,6 +95,7 @@ export class ZKSbtSDK implements IZKSbt {
         this.identity.getCommitment().toString()
       )
     );
+    console.log("claim_sbt_signature : ", claim_sbt_signature)
     return claim_sbt_signature
   }
 

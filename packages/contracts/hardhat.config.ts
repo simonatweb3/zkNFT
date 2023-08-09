@@ -27,6 +27,16 @@ const customAccounts = [
   `0xdf57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e`,
 ]
 
+let hardhatAccounts = []
+customAccounts.forEach(a => {
+    hardhatAccounts.push(
+        {
+            privateKey : a,
+            balance : "10000000000000000000000"
+        }
+  )
+});
+
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [
@@ -39,6 +49,12 @@ const config: HardhatUserConfig = {
     ]
   },
   networks: {
+    localhost: {
+      accounts: customAccounts
+    },
+    hardhat: {
+      accounts: hardhatAccounts,
+    },
     manta: {
       url : "https://manta-testnet.calderachain.xyz/http",
       chainId : 3441005,
