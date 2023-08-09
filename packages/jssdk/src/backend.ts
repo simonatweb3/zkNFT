@@ -90,11 +90,7 @@ export class Backend implements IBackend {
     }
 
     // allocate sbt_id
-    //const sbt_id = this.allocate_asset_id(sbt)
-    const sbt_id = BigInt(2144542386)
-    sbt.setId(sbt_id)
-
-    console.log("sbt normalize : ", sbt.normalize())
+    const sbt_id = this.allocate_asset_id(sbt)
 
     // server signature(publicAddress, sbt)
     const certificate_signature = await this.signer.signMessage(
