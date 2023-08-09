@@ -130,7 +130,7 @@ contract Zksbt is SemaphoreGroups, Ownable {
       sbt_minted[getSbtMeta(sbt[idx])][identity[idx]] = getSbtId(sbt[idx]);
 
       // TODO : normalized sbt spec
-      bool success = iSbt.mintWithSbtId(identity[idx], 0, 3, sbt[idx]);
+      bool success = iSbt.mintWithSbtId(identity[idx], getSbtCategory(sbt[idx]), getSbtAttribute(sbt[idx]), sbt[idx]);
       require(success, "failed to mint zkSBT");
 
       emit SbtMinted(identity[idx], sbt[idx]);

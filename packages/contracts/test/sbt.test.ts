@@ -75,36 +75,36 @@ describe("ZkSBT basic test", async function () {
 
   describe("mint", async () => {
     it("only operaor can mintWithSbtId", async () => {
-      const asset = 2;
-      const range = 1;
+      const category = 2;
+      const attribute = 1;
       const sbtId = 1;
       await expect(
-        zkSBT.connect(user_2).mintWithSbtId(1, asset, range, sbtId)
+        zkSBT.connect(user_2).mintWithSbtId(1, category, attribute, sbtId)
       ).to.be.revertedWith("caller is not operator");
     });
 
     it("identityCommitment can't be zero", async () => {
-      const asset = 2;
-      const range = 1;
+      const category = 2;
+      const attribute = 1;
       const sbtId = 1;
       await expect(
         zkSBT
           .connect(operatorOfZkSbtContract)
-          .mintWithSbtId(0, asset, range, sbtId)
+          .mintWithSbtId(0, category, attribute, sbtId)
       ).to.be.revertedWith("invalid identityCommitment");
     });
 
     it("zkAddress can't collide", async () => {
-      const asset = 2;
-      const range = 1;
+      const category = 2;
+      const attribute = 1;
       const sbtId = 1;
 
       await zkSBT
         .connect(operatorOfZkSbtContract)
         .mintWithSbtId(
           ethers.BigNumber.from("0x" + "0" + "1".padStart(63, "0")).toString(),
-          asset,
-          range,
+          category,
+          attribute,
           sbtId
         );
 
@@ -115,8 +115,8 @@ describe("ZkSBT basic test", async function () {
             ethers.BigNumber.from(
               "0x" + "1" + "1".padStart(63, "0")
             ).toString(),
-            asset,
-            range,
+            category,
+            attribute,
             2
           )
       ).to.revertedWith("collision of zkAddress");
@@ -134,13 +134,13 @@ describe("ZkSBT basic test", async function () {
       const { identityCommitment, zkAddress } =
         generateRandomIdentityCommitment();
 
-      const asset = 2;
-      const range = 1;
+      const category = 2;
+      const attribute = 1;
       const sbtId = 4;
 
       await zkSBT
         .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(identityCommitment, asset, range, sbtId);
+        .mintWithSbtId(identityCommitment, category, attribute, sbtId);
 
       await expect(await zkSBT.ownerOf(sbtId)).to.equal(
         ethers.utils.getAddress(zkAddress)
@@ -151,17 +151,17 @@ describe("ZkSBT basic test", async function () {
       const { identityCommitment, zkAddress } =
         generateRandomIdentityCommitment();
 
-      const asset = 2;
-      const range = 1;
+      const category = 2;
+      const attribute = 1;
       const sbtId = 5;
 
       await zkSBT
         .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(identityCommitment, asset, range, sbtId);
+        .mintWithSbtId(identityCommitment, category, attribute, sbtId);
 
       const metadata = await zkSBT.sbtMetaData(5);
-      expect(metadata[0].toString()).to.equal(asset.toString());
-      expect(metadata[1].toString()).to.equal(range.toString());
+      expect(metadata[0].toString()).to.equal(category.toString());
+      expect(metadata[1].toString()).to.equal(attribute.toString());
     });
   });
   describe("Token uri", async () => {
@@ -177,13 +177,13 @@ describe("ZkSBT basic test", async function () {
       const { identityCommitment, zkAddress } =
         generateRandomIdentityCommitment();
 
-      const asset = 2;
-      const range = 1;
+      const category = 2;
+      const attribute = 1;
       const sbtId = 6;
 
       await zkSBT
         .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(identityCommitment, asset, range, sbtId);
+        .mintWithSbtId(identityCommitment, category, attribute, sbtId);
 
       await expect(await zkSBT.tokenURI(sbtId)).to.equal(
         baseUri + sbtId.toString()
@@ -192,13 +192,13 @@ describe("ZkSBT basic test", async function () {
   });
   describe("SBT", async () => {
     it("SBT can't be transferred", async () => {
-      const asset = 2;
-      const range = 1;
+      const category = 2;
+      const attribute = 1;
       const sbtId = 7;
 
       await zkSBT
         .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(user_2.address, asset, range, sbtId);
+        .mintWithSbtId(user_2.address, category, attribute, sbtId);
 
       await expect(await zkSBT.ownerOf(sbtId)).to.equal(user_2.address);
 
@@ -213,16 +213,16 @@ describe("ZkSBT basic test", async function () {
     // before(async () => {
     //   await zkSBT
     //     .connect(operatorOfZkSbtContract)
-    //     .mintWithSbtId(identityCommitment, asset, range, sbtId);
+    //     .mintWithSbtId(identityCommitment, category, attribute, sbtId);
     // });
     it("only operator can burn sbt", async () => {
-      const asset = 2;
-      const range = 1;
+      const category = 2;
+      const attribute = 1;
       const sbtId = BigNumber.from(randomHex(32));
       await expect(
         zkSBT
           .connect(operatorOfZkSbtContract)
-          .mintWithSbtId(1, asset, range, sbtId)
+          .mintWithSbtId(1, category, attribute, sbtId)
       );
 
       await expect(zkSBT.connect(user_2).burn(sbtId)).to.be.revertedWith(
@@ -240,19 +240,19 @@ describe("ZkSBT basic test", async function () {
       const { identityCommitment, zkAddress } =
         generateRandomIdentityCommitment();
 
-      const asset = 2;
-      const range = 1;
+      const category = 2;
+      const attribute = 1;
       const sbtId = 8;
 
       await zkSBT
         .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(identityCommitment, asset, range, sbtId);
+        .mintWithSbtId(identityCommitment, category, attribute, sbtId);
 
       await expect(await zkSBT.zkAddressSbtSet(zkAddress)).to.eql([
         [
           BigNumber.from(sbtId),
-          BigNumber.from(asset),
-          BigNumber.from(range),
+          BigNumber.from(category),
+          BigNumber.from(attribute),
           baseUri + sbtId.toString(),
         ],
       ]);
@@ -261,33 +261,33 @@ describe("ZkSBT basic test", async function () {
       const { identityCommitment, zkAddress } =
         generateRandomIdentityCommitment();
 
-      const asset_1 = 2;
-      const range_1 = 1;
+      const category_1 = 2;
+      const attribute_1 = 1;
       const sbtId_1 = 9;
 
-      const asset_2 = 2;
-      const range_2 = 1;
+      const category_2 = 2;
+      const attribute_2 = 1;
       const sbtId_2 = 10;
 
       await zkSBT
         .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(identityCommitment, asset_1, range_1, sbtId_1);
+        .mintWithSbtId(identityCommitment, category_1, attribute_1, sbtId_1);
 
       await zkSBT
         .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(identityCommitment, asset_2, range_2, sbtId_2);
+        .mintWithSbtId(identityCommitment, category_2, attribute_2, sbtId_2);
 
       await expect(await zkSBT.zkAddressSbtSet(zkAddress)).to.eql([
         [
           BigNumber.from(sbtId_1),
-          BigNumber.from(asset_1),
-          BigNumber.from(range_1),
+          BigNumber.from(category_1),
+          BigNumber.from(attribute_1),
           baseUri + sbtId_1.toString(),
         ],
         [
           BigNumber.from(sbtId_2),
-          BigNumber.from(asset_2),
-          BigNumber.from(range_2),
+          BigNumber.from(category_2),
+          BigNumber.from(attribute_2),
           baseUri + sbtId_2.toString(),
         ],
       ]);
@@ -296,33 +296,33 @@ describe("ZkSBT basic test", async function () {
       const { identityCommitment, zkAddress } =
         generateRandomIdentityCommitment();
 
-      const asset_1 = 2;
-      const range_1 = 1;
+      const category_1 = 2;
+      const attribute_1 = 1;
       const sbtId_1 = 11;
 
-      const asset_2 = 2;
-      const range_2 = 1;
+      const category_2 = 2;
+      const attribute_2 = 1;
       const sbtId_2 = 12;
 
       await zkSBT
         .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(identityCommitment, asset_1, range_1, sbtId_1);
+        .mintWithSbtId(identityCommitment, category_1, attribute_1, sbtId_1);
 
       await zkSBT
         .connect(operatorOfZkSbtContract)
-        .mintWithSbtId(identityCommitment, asset_2, range_2, sbtId_2);
+        .mintWithSbtId(identityCommitment, category_2, attribute_2, sbtId_2);
 
       await expect(await zkSBT.zkAddressSbtSet(zkAddress)).to.eql([
         [
           BigNumber.from(sbtId_1),
-          BigNumber.from(asset_1),
-          BigNumber.from(range_1),
+          BigNumber.from(category_1),
+          BigNumber.from(attribute_1),
           baseUri + sbtId_1.toString(),
         ],
         [
           BigNumber.from(sbtId_2),
-          BigNumber.from(asset_2),
-          BigNumber.from(range_2),
+          BigNumber.from(category_2),
+          BigNumber.from(attribute_2),
           baseUri + sbtId_2.toString(),
         ],
       ]);
@@ -332,8 +332,8 @@ describe("ZkSBT basic test", async function () {
       await expect(await zkSBT.zkAddressSbtSet(zkAddress)).to.eql([
         [
           BigNumber.from(sbtId_2),
-          BigNumber.from(asset_2),
-          BigNumber.from(range_2),
+          BigNumber.from(category_2),
+          BigNumber.from(attribute_2),
           baseUri + sbtId_2.toString(),
         ],
       ]);
