@@ -75,12 +75,19 @@ describe("Zksbt", function () {
   let web2_certificate_signature
   it("User Request Web2 Backend Certificate", async function () {
     web2_certificate_signature = await sdk.get_web2_certificate(sbt)
+
+    console.log("", await sdk.backend.certificate(
+      BigInt("4108396507117556722709262205661895556752567501003761032656320944547228342463"),
+      sbt,
+      "0x263ae887f704ada0ca8c1d3df9b7e301cbd756329075845b74e0de0118d947e802df40dc866ef5e910840f91cffe77ebfc3a38394f3bedd25941eb532497a7231b"
+    ))
     console.log("web2_certificate_signature : ", web2_certificate_signature.signature)
     expect(web2_certificate_signature.eligible).eq(true)
   });
 
   it("Mint Pomp with certificate signature", async function () {
     await sdk.mint(sbt)
+    exit(0)
   });
 
   it("Query zkSBT", async function () {
