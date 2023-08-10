@@ -60,7 +60,8 @@ describe("Zksbt", function () {
       pc.address,
       owner,
       resolve(P0X_DIR, "./wasm/zksbt.wasm"),
-      resolve(P0X_DIR, "./zkey/zksbt.zkey")
+      resolve(P0X_DIR, "./zkey/zksbt.zkey"),
+      true
     )
   });
 

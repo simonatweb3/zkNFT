@@ -9,6 +9,7 @@ import { generateProof } from "./proof"
 import { Backend } from "./backend"
 import { ASSET, FileType, ZKSBT_KEY_SIGN_MESSAGE, RANGE, SBT, TREE_DEPTH } from "./common"
 import bigInt from 'big-integer';
+import assert from "assert"
 
 interface eventSbtMinted {
   identity: BigNumber;
@@ -37,18 +38,21 @@ export class ZKSbtSDK implements IZKSbt {
 
 
   // TODO : backend
+  is_mock_backend : boolean
   backend : Backend
 
   private constructor(
     zksbtContract: string,
     signer: Signer,
     identity: Identity,
+    is_mock_backend : boolean,
     backend: Backend
   ) {
     this.signer = signer;
     this.pc = new ethers.Contract(zksbtContract, zksbtJson.abi, signer);
     this.identity = identity
 
+    this.is_mock_backend = is_mock_backend
     this.backend = backend
   }
 
@@ -57,10 +61,11 @@ export class ZKSbtSDK implements IZKSbt {
     signer: Signer,
     zksbt_wasm: FileType,
     zksbt_zkey: FileType,
+    is_mock_backend : boolean,
   ): Promise<ZKSbtSDK> => {
     const identity = ZKSbtSDK.generateIdentity(JSON.stringify(await ZKSbtSDK.generateAccountPrivKeys(signer)))
     const backend = new Backend(zksbtContract, signer, zksbt_wasm, zksbt_zkey);
-    const ctx = new ZKSbtSDK(zksbtContract, signer, identity, backend);
+    const ctx = new ZKSbtSDK(zksbtContract, signer, identity, is_mock_backend, backend);
     ctx.zksbt_wasm = zksbt_wasm
     ctx.zksbt_zkey = zksbt_zkey
     return ctx;
@@ -81,10 +86,11 @@ export class ZKSbtSDK implements IZKSbt {
     return this.identity.getCommitment()
   }
 
-  public async check_eligible(
-    sbt : SBT
-  ) : Promise<boolean> {
-    return this.backend.check_eligible(await this.signer.getAddress(), sbt);
+  public check_backend_valid() {
+    if (!this.is_mock_backend) {
+      // TODO : post backend
+      assert(false, "Invalid in non-mock backend, try backend post API")
+    }
   }
 
   public async claim_sbt_signature(
@@ -97,18 +103,6 @@ export class ZKSbtSDK implements IZKSbt {
     );
     console.log("claim_sbt_signature : ", claim_sbt_signature)
     return claim_sbt_signature
-  }
-
-  public async get_web2_certificate(
-    sbt : SBT
-  ) {
-    const claim_sbt_signature = await this.claim_sbt_signature(sbt)
-
-    return this.backend.certificate(
-      this.identity.getCommitment(),
-      sbt,
-      claim_sbt_signature
-    );
   }
 
   public async mintCertificateZKSBT(
@@ -131,9 +125,33 @@ export class ZKSbtSDK implements IZKSbt {
     return await this.mintCertificateZKSBT(sbt, certificate.signature)
   }
 
+  // backend call
+
+  public async check_eligible(
+    sbt : SBT
+  ) : Promise<boolean> {
+    this.check_backend_valid()
+    return this.backend.check_eligible(await this.signer.getAddress(), sbt);
+  }
+
+
+  public async get_web2_certificate(
+    sbt : SBT
+  ) {
+    this.check_backend_valid()
+    const claim_sbt_signature = await this.claim_sbt_signature(sbt)
+
+    return this.backend.certificate(
+      this.identity.getCommitment(),
+      sbt,
+      claim_sbt_signature
+    );
+  }
+
   public async mintFromBackend(
     sbt : SBT
   ) {
+    this.check_backend_valid()
     const claim_sbt_signature = await this.claim_sbt_signature(sbt)
     return await this.backend.mint(
       this.identity.getCommitment(),
@@ -155,6 +173,7 @@ export class ZKSbtSDK implements IZKSbt {
     group : Group,
     sbt : SBT
   ) : Promise<string> {
+    this.check_backend_valid()
     const pool = await this.pc.getSbtPool(sbt.category, sbt.attribute)
     const proof =  await generateProof(
       this.identity,
