@@ -6,7 +6,7 @@ import { expect } from "chai";
 
 // browser compatible 
 import { Zksbt} from "../typechain-types";
-import { ASSET, SBT_CATEGORY, generateProof, RANGE, TREE_DEPTH, unpackProof,  SBT, ZKSbtSDK } from "@zksbt/jssdk"
+import { ASSET, SBT_CATEGORY, generateProof, RANGE, TREE_DEPTH, unpackProof,  SBT, ZKSbtSDK, Backend } from "@zksbt/jssdk"
 import { Group } from "@semaphore-protocol/group"
 import { dnld_aws, P0X_DIR } from "./utility";
 import { resolve } from "path";
@@ -17,6 +17,7 @@ import { Wallet } from "ethers";
 import { deploy } from "./deploy";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { exit } from "process";
+import { PoolStruct } from "../typechain-types/contracts/zkSBT.sol/Zksbt";
 
 
 describe("Zksbt", function () {
@@ -25,6 +26,7 @@ describe("Zksbt", function () {
   let signers: SignerWithAddress;
   let pc : Zksbt
   let sdk : ZKSbtSDK
+  let backend : Backend
   let ownerOfZkSbtContract: Wallet;
   let zkSBT : SBT
 
@@ -61,8 +63,14 @@ describe("Zksbt", function () {
       owner,
       resolve(P0X_DIR, "./wasm/zksbt.wasm"),
       resolve(P0X_DIR, "./zkey/zksbt.zkey"),
-      true
     )
+
+    backend = new Backend(
+      pc.address,
+      owner,
+      resolve(P0X_DIR, "./wasm/zksbt.wasm"),
+      resolve(P0X_DIR, "./zkey/zksbt.zkey"),
+    );
   });
 
   // it("Add zkSBT(type, or pomp asset/range)", async function () {
@@ -73,37 +81,62 @@ describe("Zksbt", function () {
   // });
 
   let sbt : SBT = SBT.createPomp(ASSET.ETH, RANGE.RANGE_100)
-  let web2_certificate_signature
-  it("User Request Web2 Backend Certificate", async function () {
-    web2_certificate_signature = await sdk.get_web2_certificate(sbt)
-    console.log("web2_certificate_signature : ", web2_certificate_signature.signature)
-    expect(web2_certificate_signature.eligible).eq(true)
+  let claim_sbt_signature : string
+  it("Frontend Claim SBT Signature", async function () {
+    claim_sbt_signature = await sdk.claimSbtSignature(sbt)
   });
 
-  it("Mint Pomp with certificate signature", async function () {
-    await sdk.mint(sbt)
+  it("mint by backend ", async function () {
+    await backend.mint(sdk.getPublicAddress(), sbt, claim_sbt_signature)
+  });
+
+
+  let backend_certificate :  {eligible: boolean; signature: string; sbt_id: bigint;}
+  it("Frontend Ask Backend Certificate", async function () {
+    backend_certificate = await backend.certificate(
+      sdk.identity.getCommitment(),
+      sbt,
+      claim_sbt_signature
+    );
+    expect(backend_certificate.eligible).eq(true)
+  });
+
+  it("sbt using backend allocate new id", async function () {
+    sbt.setId(backend_certificate.sbt_id)
+  });
+
+  it("mint zksbt directly with certificate signature", async function () {
+    await sdk.mint(sbt, backend_certificate.signature)
   });
 
   it("Query zkSBT", async function () {
-    const sbts = await sdk.query_sbt_list()
+    const sbts = await sdk.querySbt()
     console.log("sbts : ", sbts)
     expect(sbts[0].category).eq(SBT_CATEGORY.POMP)
-    // expect(sbts[0].asset).eq(sbt.asset)
-    // expect(sbts[0].range).eq(sbt.range)
+  });
+
+  let pool : PoolStruct
+  let onchain_root : bigint
+  it("Get zkSBT Proof Key", async function () {
+    pool = await pc.getSbtPool(sbt.category, sbt.attribute)
+    onchain_root = (await pc.getMerkleTreeRoot(pool.id)).toBigInt()
+
+    const salt = await backend.alloc_proof_key_salt(sbt)
+    const proof = await sdk.generateProof(sbt, onchain_root, salt)
+    
+    const proof_key = await backend.generateProofKey(
+      sdk.getPublicAddress(),
+      sbt,
+      salt,
+      proof
+    )
+    console.log("proof_key : ", proof_key)
+    exit(0)
   });
 
   let group : Group
   it("Off-chain re-construct merkle tree Group", async function () {
-    const pool = await pc.getSbtPool(sbt.category, sbt.attribute)
-    console.log("poolId : ", pool.id)
-    const onchain_root = await pc.getMerkleTreeRoot(pool.id)
-
-    group = (await sdk.reconstructOffchainGroup(sbt, onchain_root.toBigInt())).group
-  });
-
-  it("Get zkSBT Proof Key", async function () {
-    const proof_key = await sdk.getProofKey(sbt)
-    console.log("proof_key : ", proof_key)
+    group = (await sdk.reconstructOffchainGroup(sbt, onchain_root)).group
   });
 
   it("Off-chain Verify Pomp Membership", async function () {

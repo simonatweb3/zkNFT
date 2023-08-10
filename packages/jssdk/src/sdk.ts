@@ -3,13 +3,12 @@ import type {BigNumber} from 'ethers'
 
 import { Identity } from "@semaphore-protocol/identity"
 import { Group } from "@semaphore-protocol/group"
+import { Proof } from "@semaphore-protocol/proof"
 //import * as zksbtJson from "./ABI/Zksbt.json"
 import zksbtJson from "./ABI/Zksbt.json"
 import { generateProof } from "./proof"
-import { Backend } from "./backend"
 import { ASSET, FileType, ZKSBT_KEY_SIGN_MESSAGE, RANGE, SBT, TREE_DEPTH } from "./common"
 import bigInt from 'big-integer';
-import assert from "assert"
 
 interface eventSbtMinted {
   identity: BigNumber;
@@ -17,15 +16,11 @@ interface eventSbtMinted {
 }
 
 interface IZKSbt {
-  getPublicAddress() : bigint;
-  check_eligible : (sbt : SBT) => Promise<boolean>;
-  get_web2_certificate : (sbt : SBT) => Promise<{
-    eligible: boolean;
-    signature: string;
-  }>;
-  mint : (sbt : SBT, sbtId: string) => Promise<number>;
-  mintCertificateZKSBT : (sbt : SBT, sig : string) => Promise<number>;
-  getProofKey : (sbt : SBT) => Promise<string>;
+  getPublicAddress : () => bigint;
+  claimSbtSignature : (sbt : SBT) => Promise<string>;
+  mint : (sbt : SBT, sig : string) => Promise<number>;
+  generateProof : (sbt : SBT, root : bigint, salt : bigint) => Promise<Proof>;
+  querySbt : () =>  Promise<SBT[]>;
 }
 
 export class ZKSbtSDK implements IZKSbt {
@@ -36,36 +31,24 @@ export class ZKSbtSDK implements IZKSbt {
   identity: Identity
   // on-chain merkle trees
 
-
-  // TODO : backend
-  is_mock_backend : boolean
-  backend : Backend
-
   private constructor(
     zksbtContract: string,
     signer: Signer,
-    identity: Identity,
-    is_mock_backend : boolean,
-    backend: Backend
+    identity: Identity
   ) {
     this.signer = signer;
     this.pc = new ethers.Contract(zksbtContract, zksbtJson.abi, signer);
     this.identity = identity
-
-    this.is_mock_backend = is_mock_backend
-    this.backend = backend
   }
 
   public static create = async (
     zksbtContract: string,
     signer: Signer,
     zksbt_wasm: FileType,
-    zksbt_zkey: FileType,
-    is_mock_backend : boolean,
+    zksbt_zkey: FileType
   ): Promise<ZKSbtSDK> => {
     const identity = ZKSbtSDK.generateIdentity(JSON.stringify(await ZKSbtSDK.generateAccountPrivKeys(signer)))
-    const backend = new Backend(zksbtContract, signer, zksbt_wasm, zksbt_zkey);
-    const ctx = new ZKSbtSDK(zksbtContract, signer, identity, is_mock_backend, backend);
+    const ctx = new ZKSbtSDK(zksbtContract, signer, identity);
     ctx.zksbt_wasm = zksbt_wasm
     ctx.zksbt_zkey = zksbt_zkey
     return ctx;
@@ -86,16 +69,9 @@ export class ZKSbtSDK implements IZKSbt {
     return this.identity.getCommitment()
   }
 
-  public check_backend_valid() {
-    if (!this.is_mock_backend) {
-      // TODO : post backend
-      assert(false, "Invalid in non-mock backend, try backend post API")
-    }
-  }
-
-  public async claim_sbt_signature(
+  public async claimSbtSignature(
     sbt : SBT
-  ) {
+  ) : Promise<string> {
     const claim_sbt_signature =  await this.signer.signMessage(
       sbt.claim_msg(
         this.identity.getCommitment().toString()
@@ -105,7 +81,7 @@ export class ZKSbtSDK implements IZKSbt {
     return claim_sbt_signature
   }
 
-  public async mintCertificateZKSBT(
+  public async mint(
     sbt : SBT,
     sig : string
   ) {
@@ -117,83 +93,28 @@ export class ZKSbtSDK implements IZKSbt {
     ).wait()
   }
 
-  public async mint(
-    sbt : SBT
-  ) {
-    const certificate = await this.get_web2_certificate(sbt)
-    sbt.setId(certificate.sbt_id)
-    return await this.mintCertificateZKSBT(sbt, certificate.signature)
+  public async generateProof(
+    sbt : SBT,
+    root : bigint,
+    salt : bigint
+  ) : Promise<Proof> {
+    const group = (await this.reconstructOffchainGroup(sbt, root)).group
+    return this.generateSpecialProof(sbt, group, salt)
   }
 
-  // backend call
-
-  public async check_eligible(
-    sbt : SBT
-  ) : Promise<boolean> {
-    this.check_backend_valid()
-    return this.backend.check_eligible(await this.signer.getAddress(), sbt);
-  }
-
-
-  public async get_web2_certificate(
-    sbt : SBT
-  ) {
-    this.check_backend_valid()
-    const claim_sbt_signature = await this.claim_sbt_signature(sbt)
-
-    return this.backend.certificate(
-      this.identity.getCommitment(),
-      sbt,
-      claim_sbt_signature
-    );
-  }
-
-  public async mintFromBackend(
-    sbt : SBT
-  ) {
-    this.check_backend_valid()
-    const claim_sbt_signature = await this.claim_sbt_signature(sbt)
-    return await this.backend.mint(
-      this.identity.getCommitment(),
-      sbt,
-      claim_sbt_signature
-    )
-  }
-
-  public async getProofKey(
-    sbt : SBT
-  ) : Promise<string> {
-    const pool = await this.pc.getSbtPool(sbt.category, sbt.attribute)
-    const onchain_root = await this.pc.getMerkleTreeRoot(pool.id)
-    const group = (await this.reconstructOffchainGroup(sbt, onchain_root.toBigInt())).group
-    return this.getSpecialProofKey(group, sbt)
-  }
-
-  public async getSpecialProofKey(
+  public async generateSpecialProof(
+    sbt : SBT,
     group : Group,
-    sbt : SBT
-  ) : Promise<string> {
-    this.check_backend_valid()
-    const pool = await this.pc.getSbtPool(sbt.category, sbt.attribute)
+    salt : bigint
+  ) : Promise<Proof> {
     const proof =  await generateProof(
       this.identity,
-      BigInt(pool.salt),
+      salt,
       group,
       this.zksbt_wasm,
       this.zksbt_zkey
     )
-
-    return this.backend.generate_proof_key(
-      this.identity.getCommitment(),
-      sbt,
-      pool.salt,
-      proof.proof
-    )
-  }
-
-  public async mint_and_generate_proof_key() {
-    // mint
-    // return getProofKey
+    return proof.proof
   }
 
   // constrcut off-chain merkle tree group with in-order on chain data,
@@ -257,7 +178,7 @@ export class ZKSbtSDK implements IZKSbt {
 
 
   // zkSBT List
-  public async query_sbt(
+  public async _querySbt(
     sbt : SBT
   ) {
     // TODO : check SbtMinted event
@@ -265,13 +186,12 @@ export class ZKSbtSDK implements IZKSbt {
     return id
   }
 
-  public async query_sbt_list() {
+  public async querySbt() {
     const sbt_list: SBT[] = []
     for(const asset in Object.values(ASSET)) {  // TODO : fix
       for(const range in Object.values(RANGE)) {
-        //console.log("asset ", asset, " range ", range)
         const sbt:SBT = SBT.createPomp(Number(asset), Number(range))
-        const sbt_id = await this.query_sbt(sbt)
+        const sbt_id = await this._querySbt(sbt)
         if (sbt_id > 0) {
           sbt.setId(sbt_id)
           sbt_list.push(sbt)

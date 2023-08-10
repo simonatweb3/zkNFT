@@ -124,6 +124,7 @@ contract Zksbt is SemaphoreGroups, Ownable {
       address signer = ECDSA.recover(msgHash, certificate_signature[idx]);
       require(signer == owner(), "Invalid Certificate Signature!");
 
+      // TODO : only add once!
       _addMember(pools[getSbtMeta(sbt[idx])].id, identity[idx]);
 
       //console.log("sol meta data : ", getSbtMeta(sbt[idx]));

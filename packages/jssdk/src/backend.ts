@@ -4,13 +4,13 @@ import { FileType, SBT} from "./common";
 import zksbtJson from "./ABI/Zksbt.json"
 
 interface IBackend {
-  check_eligible : (privateAddress : string, sbt : SBT) => boolean;
-  allocate_asset_id : (sbt : SBT) => bigint;
+  checkEligible : (privateAddress : string, sbt : SBT) => boolean;
+  //allocate_asset_id : (sbt : SBT) => bigint;
   certificate : (publicAddress: bigint, sbt : SBT, sig : string) => 
     Promise<{ eligible: boolean; signature: string; sbt_id: bigint; }>
   mint : (publicAddress: bigint, sbt : SBT, sig : string) => 
     Promise<{ eligible: boolean; sbt_id: bigint; }>
-  generate_proof_key : (publicAddress : bigint, sbt : SBT, salt : bigint, proof : Proof) => Promise<string>;
+  generateProofKey : (publicAddress : bigint, sbt : SBT, salt : bigint, proof : Proof) => Promise<string>;
 }
 export class Backend implements IBackend {
   pc: Contract;
@@ -30,7 +30,7 @@ export class Backend implements IBackend {
     this.zksbt_zkey = zksbt_zkey
   }
 
-  public check_eligible(
+  public checkEligible(
     privateAddress : string,
     sbt : SBT
   ) : boolean {
@@ -81,7 +81,7 @@ export class Backend implements IBackend {
       sig
     )
 
-    if (!this.check_eligible(privateAddress, sbt)) {
+    if (!this.checkEligible(privateAddress, sbt)) {
       return {
         eligible : false,
         signature : "",
@@ -108,10 +108,10 @@ export class Backend implements IBackend {
   ) {
     // TODO
     const pool = await this.pc.getSbtPool(sbt.category, sbt.attribute)
-    return pool.salt
+    return pool.salt.toBigInt()
   }
 
-  public async generate_proof_key(
+  public async generateProofKey(
     publicAddress : bigint,
     sbt : SBT,
     salt : bigint,
