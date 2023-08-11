@@ -20,7 +20,7 @@ interface IZKSbt {
   claimSbtSignature : (sbt : SBT) => Promise<string>;
   mint : (sbt : SBT, sig : string) => Promise<number>;
   generateProof : (sbt : SBT, root : bigint, salt : bigint) => Promise<Proof>;
-  querySbt : () =>  Promise<SBT[]>;
+  querySbts : () =>  Promise<SBT[]>;
 }
 
 export class ZKSbtSDK implements IZKSbt {
@@ -186,7 +186,7 @@ export class ZKSbtSDK implements IZKSbt {
     return id
   }
 
-  public async querySbt() {
+  public async querySbts() {
     const sbt_list: SBT[] = []
     for(const asset in Object.values(ASSET)) {  // TODO : fix
       for(const range in Object.values(RANGE)) {

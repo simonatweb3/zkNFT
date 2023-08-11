@@ -5,7 +5,6 @@ import zksbtJson from "./ABI/Zksbt.json"
 
 interface IBackend {
   checkEligible : (privateAddress : string, sbt : SBT) => boolean;
-  //allocate_asset_id : (sbt : SBT) => bigint;
   certificate : (publicAddress: bigint, sbt : SBT, sig : string) => 
     Promise<{ eligible: boolean; signature: string; sbt_id: bigint; }>
   mint : (publicAddress: bigint, sbt : SBT, sig : string) => 

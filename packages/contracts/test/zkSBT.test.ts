@@ -110,7 +110,7 @@ describe("Zksbt", function () {
   });
 
   it("Query zkSBT", async function () {
-    const sbts = await sdk.querySbt()
+    const sbts = await sdk.querySbts()
     console.log("sbts : ", sbts)
     expect(sbts[0].category).eq(SBT_CATEGORY.POMP)
   });
