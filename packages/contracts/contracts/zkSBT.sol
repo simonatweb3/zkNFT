@@ -2,11 +2,12 @@
 pragma solidity >=0.7.0 <0.9.0;
 
 import "@semaphore-protocol/contracts/base/SemaphoreGroups.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./interface/sbt.sol";
 import "./spec.sol";
+import "./upgradeableLib/Ownable.sol";
 import "hardhat/console.sol";
 
 interface IVerifier {
@@ -25,7 +26,8 @@ struct Pool {
   uint salt;
 }
 
-contract Zksbt is SemaphoreGroups, Ownable {
+contract Zksbt is SemaphoreGroups, Ownable, Initializable {
+  bytes constant public version = "0.5";
   bytes constant ZKSBT_CLAIM_MESSAGE = "Sign this meesage to claim zkSBT : ";
   uint constant POMP_POOL_DEPTH = 10;
   mapping(uint256 => IVerifier) public verifiers;
@@ -45,11 +47,13 @@ contract Zksbt is SemaphoreGroups, Ownable {
     address indexed newAddress
   );
 
-  constructor(
+  function initialize(
     IVerifier _verifier,
     uint poolDepth,
     SbtInterface _iSbt
-  ) Ownable() {
+  ) external initializer {
+    _initOwnable();
+
     // zksbt verifier
     verifiers[poolDepth] = _verifier;
 

@@ -41,16 +41,16 @@
 4. Contract Deploy/Upgrade
 
 ```shell
-    cd packages/contracts; yarn deploy --network manta;
+    cd packages/contracts;
+    cp testnet.env .env
+    yarn deploy --network manta;
 ```
 
-PT3 :  0x93367d611e548F23F2E48eD2553661c69176d303
-IBT :  0xB0398a9C0e0c6F66aFFD78058Fd82F88eb805F33
-V :  0xfb43eDACf79340cD4744004bae3a4F40e8F776C2
-POMP :  0x08C1B3d605Bd4105d999e06D1A378faaE5d34626
+VERIFIER = 0x97B41d3F0b78f5Ae22e02bcECBaEf680878009CA
+SBT = 0x2deE1b91f02C5F94FfBE62C427A1dB828E314153
+ZKSBT = 0x41dB82dCa42363e8C88797eFf77e1279Ef3D5AAA
 
-5. Contract Verify
+5. Contract Upgrade
 ```shell
-    yarn verify --network manta 0x08C1B3d605Bd4105d999e06D1A378faaE5d34626 "0xfb43eDACf79340cD4744004bae3a4F40e8F776C2" "10"
+    yarn upgrade --network manta
 ```
-[veirfied code](https://manta-testnet.calderaexplorer.xyz/address/0x08C1B3d605Bd4105d999e06D1A378faaE5d34626#code)

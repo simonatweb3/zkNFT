@@ -2,6 +2,8 @@ import { HardhatUserConfig } from "hardhat/config";
 import "@nomiclabs/hardhat-ethers";
 import "@typechain/hardhat";
 import "@nomiclabs/hardhat-etherscan"
+import '@openzeppelin/hardhat-upgrades';
+require('dotenv').config()
 
 const customAccounts = [
   `0x828a065aa2818619cb9a5435ce9e7d95fdd3e6dd89fc5fcd4dd4a37346a54084`, // 0x7A7765Db4733DFe037342A8bCDfAEE83ddE405da
