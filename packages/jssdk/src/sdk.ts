@@ -18,7 +18,7 @@ interface eventSbtMinted {
 interface IZKSbt {
   getPublicAddress : () => bigint;
   claimSbtSignature : (sbt : SBT) => Promise<string>;
-  mint : (sbt : SBT, sig : string) => Promise<number>;
+  mint : (sbt : SBT, sig : string) => Promise<void>;
   generateProof : (sbt : SBT, root : bigint, salt : bigint) => Promise<Proof>;
   querySbts : () =>  Promise<SBT[]>;
 }
@@ -85,12 +85,12 @@ export class ZKSbtSDK implements IZKSbt {
     sbt : SBT,
     sig : string
   ) {
-    return await (await this.pc.mint(
-      [this.identity.getCommitment()],
-      [sbt.normalize()],
-      [sig],
-      {gasLimit : 2000000})
-    ).wait()
+      await (await this.pc.mint(
+        [this.identity.getCommitment()],
+        [sbt.normalize()],
+        [sig],
+        {gasLimit : 2000000})
+      ).wait()
   }
 
   public async generateProof(

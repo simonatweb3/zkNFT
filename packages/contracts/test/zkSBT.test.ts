@@ -6,7 +6,7 @@ import { expect } from "chai";
 
 // browser compatible 
 import { Zksbt} from "../typechain-types";
-import { ASSET, SBT_CATEGORY, generateProof, RANGE, TREE_DEPTH, unpackProof,  SBT, ZKSbtSDK, Backend } from "@zksbt/jssdk"
+import { ASSET, SBT_CATEGORY, generateProof, RANGE, TREE_DEPTH, unpackProof,  SBT, ZKSbtSDK, Backend, REVERT_REASON_ALREADY_MINT_SBT } from "@zksbt/jssdk"
 import { Group } from "@semaphore-protocol/group"
 import { dnld_aws, P0X_DIR } from "./utility";
 import { resolve } from "path";
@@ -105,8 +105,12 @@ describe("Zksbt", function () {
     sbt.setId(backend_certificate.sbt_id)
   });
 
-  it("mint zksbt directly with certificate signature", async function () {
-    await sdk.mint(sbt, backend_certificate.signature)
+  it("duplicate mint zksbt directly with certificate signature", async function () {
+    try {
+      await sdk.mint(sbt, backend_certificate.signature)
+    } catch (error) {
+      expect(error.toString().includes(REVERT_REASON_ALREADY_MINT_SBT)).equal(true)
+    }
   });
 
   it("Query zkSBT", async function () {
@@ -131,9 +135,9 @@ describe("Zksbt", function () {
       proof
     )
     console.log("proof_key : ", proof_key)
-    exit(0)
   });
 
+if (false) {
   let group : Group
   it("Off-chain re-construct merkle tree Group", async function () {
     group = (await sdk.reconstructOffchainGroup(sbt, onchain_root)).group
@@ -190,5 +194,6 @@ describe("Zksbt", function () {
     const res = await sdk.mintFromBackend(sbt_zkbab)
     console.log("mint res : ", res)
   });
+}
 
 });

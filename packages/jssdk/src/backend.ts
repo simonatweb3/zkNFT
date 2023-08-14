@@ -10,6 +10,8 @@ interface IBackend {
   mint : (publicAddress: bigint, sbt : SBT, sig : string) => 
     Promise<{ eligible: boolean; sbt_id: bigint; }>
   generateProofKey : (publicAddress : bigint, sbt : SBT, salt : bigint, proof : Proof) => Promise<string>;
+  // mintAndGetProofKey : (publicAddress: bigint, sbt : SBT, sig : string, proof : Proof) =>
+  //   Promise<{ eligible: boolean; sbt_id: bigint; proof_key : string }>
 }
 export class Backend implements IBackend {
   pc: Contract;

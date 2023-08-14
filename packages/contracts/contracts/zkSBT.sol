@@ -8,7 +8,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./interface/sbt.sol";
 import "./spec.sol";
 import "./upgradeableLib/Ownable.sol";
-import "hardhat/console.sol";
 
 interface IVerifier {
   function verifyProof(
@@ -104,6 +103,22 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
     return _createSbtPool(sbt, name, poolDepth);
   }
 
+  function sbt_claim_message(
+    uint identity,
+    uint sbt
+  ) public pure returns (bytes memory) {
+    return bytes.concat(ZKSBT_CLAIM_MESSAGE,
+      " identity ",
+      bytes(Strings.toString(identity)),
+      " sbt category ",
+      bytes(Strings.toString(getSbtCategory(sbt))),
+      " sbt attribute ",
+      bytes(Strings.toString(getSbtAttribute(sbt))),
+      " sbt id ",
+      bytes(Strings.toString(getSbtId(sbt)))
+    );
+  }
+
   // batch mint
   function mint(
     uint[] calldata identity,
@@ -111,27 +126,14 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
     bytes[] calldata certificate_signature
   ) public onlyOwner {
     for (uint256 idx = 0; idx < identity.length; idx++) {
-      bytes memory message = bytes.concat(ZKSBT_CLAIM_MESSAGE,
-        " identity ",
-        bytes(Strings.toString(identity[idx])),
-        " sbt category ",
-        bytes(Strings.toString(getSbtCategory(sbt[idx]))),
-        " sbt attribute ",
-        bytes(Strings.toString(getSbtAttribute(sbt[idx]))),
-        " sbt id ",
-        bytes(Strings.toString(getSbtId(sbt[idx])))
-      );
-      console.log("getSbtId : ", getSbtId(sbt[idx]));
-      // console.log("message : ");
-      // console.logBytes(message);
+      bytes memory message = sbt_claim_message(identity[idx], sbt[idx]);
       bytes32 msgHash = ECDSA.toEthSignedMessageHash(message);
       address signer = ECDSA.recover(msgHash, certificate_signature[idx]);
       require(signer == owner(), "Invalid Certificate Signature!");
 
-      // TODO : only add once!
+      require(sbt_minted[getSbtMeta(sbt[idx])][identity[idx]] == 0, "zksbt exist!");
       _addMember(pools[getSbtMeta(sbt[idx])].id, identity[idx]);
 
-      //console.log("sol meta data : ", getSbtMeta(sbt[idx]));
       sbt_minted[getSbtMeta(sbt[idx])][identity[idx]] = getSbtId(sbt[idx]);
 
       // TODO : normalized sbt spec
