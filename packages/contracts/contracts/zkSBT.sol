@@ -19,19 +19,20 @@ interface IVerifier {
 }
 
 struct Pool {
-  uint id;
+  uint id;  // reserve group[id ~ id + offset], sbt capacity 2<<128
   string name;
   uint depth;
   uint salt;
+  uint amount;
 }
 
 contract Zksbt is SemaphoreGroups, Ownable, Initializable {
   bytes constant public version = "0.5";
   bytes constant ZKSBT_CLAIM_MESSAGE = "Sign this meesage to claim zkSBT : ";
-  uint constant POMP_POOL_DEPTH = 10;
   mapping(uint256 => IVerifier) public verifiers;
 
-  uint public latestPoolId;
+  uint public latestStartGroupId;
+  uint public groupIdOffset;
   SbtInterface public iSbt;
 
   // sbt(category, attr) --> pools
@@ -41,6 +42,9 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
   mapping(uint => mapping(uint => uint)) public sbt_minted;
   event SbtMinted(uint indexed identity, uint sbt);
 
+  // sbt(category, attr) --> public address --> group_id
+  mapping(uint => mapping(uint => uint)) public sbt_identity_group;
+
   event ZkSbtAddressChange(
     address indexed oldAddress,
     address indexed newAddress
@@ -48,19 +52,21 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
 
   function initialize(
     IVerifier _verifier,
-    uint poolDepth,
+    uint groupDepth,
     SbtInterface _iSbt
   ) external initializer {
     _initOwnable();
 
+    groupIdOffset = SBT_CAPACITY - groupDepth;
+
     // zksbt verifier
-    verifiers[poolDepth] = _verifier;
+    verifiers[groupDepth] = _verifier;
 
     // init build-in zksbt pool
-    latestPoolId = 0;
+    latestStartGroupId = 0;
 
-    _createSbtPool(pompToSbt(uint32(ASSET.ETH), uint32(RANGE.RANGE_100), 0), "POMP-ETH-RANGE_100", poolDepth);
-    _createSbtPool(pompToSbt(uint32(ASSET.BNB), uint32(RANGE.RANGE_100), 0), "POMP-BNB-RANGE_100", poolDepth);
+    _createSbtPool(pompToSbt(uint32(ASSET.ETH), uint32(RANGE.RANGE_100), 0), "POMP-ETH-RANGE_100", groupDepth);
+    _createSbtPool(pompToSbt(uint32(ASSET.BNB), uint32(RANGE.RANGE_100), 0), "POMP-BNB-RANGE_100", groupDepth);
 
     iSbt = _iSbt;
   }
@@ -70,16 +76,18 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
   function _createSbtPool(
     uint sbt,
     string memory name,
-    uint poolDepth
+    uint groupDepth
   ) internal returns (uint) {
-    _createGroup(latestPoolId, poolDepth);
+    _createGroup(latestStartGroupId, groupDepth);
     pools[sbt] = Pool({
-      id: latestPoolId++,
+      id: latestStartGroupId,
       name: name,
-      depth: poolDepth,
-      salt:0
+      depth: groupDepth,
+      salt:0,
+      amount:0
     });
-    return latestPoolId;
+    latestStartGroupId += groupIdOffset;
+    return latestStartGroupId;
   }
 
   function getSbtPoolV2(
@@ -98,9 +106,9 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
   function createSbtPool(
     uint sbt,
     string calldata name,
-    uint poolDepth
+    uint groupDepth
   ) public onlyOwner returns (uint) {
-    return _createSbtPool(sbt, name, poolDepth);
+    return _createSbtPool(sbt, name, groupDepth);
   }
 
   function sbt_claim_message(
@@ -119,6 +127,23 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
     );
   }
 
+  function addMember(
+    uint sbt,
+    uint identity
+  ) private {
+    Pool storage pool = pools[getSbtMeta(sbt)];
+    uint startGroupId = pool.id;
+    uint curGroup = startGroupId + pool.amount / (2 << pool.depth);
+    if (pool.amount!= 0 && pool.amount % (2 << pool.depth) == 0) {
+      // new group
+      _createGroup(++curGroup , pool.depth);
+    }
+    _addMember(curGroup, identity);
+    sbt_identity_group[getSbtMeta(sbt)][identity] = curGroup;
+
+    pool.amount++;
+  }
+
   // batch mint
   function mint(
     uint[] calldata identity,
@@ -132,8 +157,7 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
       require(signer == owner(), "Invalid Certificate Signature!");
 
       require(sbt_minted[getSbtMeta(sbt[idx])][identity[idx]] == 0, "zksbt exist!");
-      _addMember(pools[getSbtMeta(sbt[idx])].id, identity[idx]);
-
+      addMember(sbt[idx], identity[idx]);
       sbt_minted[getSbtMeta(sbt[idx])][identity[idx]] = getSbtId(sbt[idx]);
 
       // TODO : normalized sbt spec
@@ -147,16 +171,18 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
   // verify with given merkle root and given salt
   function verifyWithRootAndSalt(
     uint sbt,
+    uint groupId,
     uint merkle_root,
     // uint verify_time,
     uint256 nullifierHash,
     uint256[8] calldata proof,
     uint salt
-  ) public view {
+  ) public {
     // check merkle_root valid, and match verify_time
 
     // now using the latest root
-    uint256 merkleTreeDepth = getMerkleTreeDepth(getSbtPoolV2(sbt).id);
+    checkGroupIdInSbtPool(groupId, sbt);
+    uint256 merkleTreeDepth = getMerkleTreeDepth(groupId);
     uint256[] memory inputs = new uint256[](3);
     inputs[0] = merkle_root;
     inputs[1] = nullifierHash;
@@ -174,22 +200,35 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
   // verify with on-chain latest merkle tree and given salt
   function verifyWithSalt(
     uint sbt,
+    uint groupId,
     uint256 nullifierHash,
     uint256[8] calldata proof,
     uint salt
   ) public {
-    uint256 merkleTreeRoot = getMerkleTreeRoot(getSbtPoolV2(sbt).id);
-    verifyWithRootAndSalt(sbt, merkleTreeRoot, nullifierHash, proof, salt);
+    checkGroupIdInSbtPool(groupId, sbt);
+    uint256 merkleTreeRoot = getMerkleTreeRoot(groupId);
+    verifyWithRootAndSalt(sbt, groupId, merkleTreeRoot, nullifierHash, proof, salt);
+  }
+
+  function checkGroupIdInSbtPool(
+    uint groupId,
+    uint sbt
+  ) public {
+    uint groupStartId = getSbtPoolV2(sbt).id;
+    require(groupId >= groupStartId, "id too small!");
+    require(groupId < groupStartId + groupIdOffset, "id too big!");
   }
 
   // verify with on-chain latest merkle tree and on-chain salt
   function verify(
     uint sbt,
+    uint groupId,
     uint256 nullifierHash,
     uint256[8] calldata proof
   ) public {
-    uint256 merkleTreeRoot = getMerkleTreeRoot(getSbtPoolV2(sbt).id);
-    verifyWithRootAndSalt(sbt, merkleTreeRoot, nullifierHash, proof, getSbtPoolV2(sbt).salt);
+    checkGroupIdInSbtPool(groupId, sbt);
+    uint256 merkleTreeRoot = getMerkleTreeRoot(groupId);
+    verifyWithRootAndSalt(sbt, groupId, merkleTreeRoot, nullifierHash, proof, getSbtPoolV2(sbt).salt);
 
     // random change salts[asset][range] to avoid proof conflict
     pools[getSbtMeta(sbt)].salt += 1;

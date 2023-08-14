@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.7.0 <0.9.0;
 
+uint constant SBT_CAPACITY = 128;
+
 struct Sbt {
   uint64 category;
   uint64 attribute;
