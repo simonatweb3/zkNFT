@@ -134,7 +134,24 @@ describe("Zksbt", function () {
       salt,
       proof
     )
-    console.log("proof_key : ", proof_key)
+    console.log("pomp proof_key : ", proof_key)
+  });
+
+  let sbt_zkbab : SBT = SBT.create(SBT_CATEGORY.ZKBAB)
+  it("add ZKBAB Pool", async function () {
+    await (await pc.createSbtPool(sbt_zkbab.normalize(), "ZKBAB", 10)).wait()
+  });
+
+  it("mint sbt and generate proof key", async function () {
+    const salt = backend.init_salt()
+    const proof = await sdk.generateProof(sbt, onchain_root, salt)
+    const res = await backend.mintAndGetProofKey(
+      sdk.getPublicAddress(),
+      sbt_zkbab,
+      await sdk.claimSbtSignature(sbt_zkbab),
+      proof
+    )
+    console.log("zkbab proof key : ", res.proof_key)
   });
 
 if (false) {

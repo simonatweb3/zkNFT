@@ -10,8 +10,8 @@ interface IBackend {
   mint : (publicAddress: bigint, sbt : SBT, sig : string) => 
     Promise<{ eligible: boolean; sbt_id: bigint; }>
   generateProofKey : (publicAddress : bigint, sbt : SBT, salt : bigint, proof : Proof) => Promise<string>;
-  // mintAndGetProofKey : (publicAddress: bigint, sbt : SBT, sig : string, proof : Proof) =>
-  //   Promise<{ eligible: boolean; sbt_id: bigint; proof_key : string }>
+  mintAndGetProofKey : (publicAddress: bigint, sbt : SBT, sig : string, proof : Proof) =>
+    Promise<{ eligible: boolean; sbt_id: bigint; proof_key : string }>
 }
 export class Backend implements IBackend {
   pc: Contract;
@@ -128,4 +128,25 @@ export class Backend implements IBackend {
     );
     return ethers.utils.keccak256(bytesData); 
   }
+
+
+  public init_salt() {
+    return BigInt(1234)
+  }
+
+  public async mintAndGetProofKey(
+    publicAddress: bigint,
+    sbt : SBT,
+    sig : string,
+    proof : Proof
+  ) : Promise<{ eligible: boolean; sbt_id: bigint; proof_key : string }> {
+    const mint_ret = await this.mint(publicAddress, sbt, sig)
+    const proof_key = await this.generateProofKey(publicAddress, sbt, this.init_salt(), proof)
+    return {
+      eligible : mint_ret.eligible,
+      sbt_id : mint_ret.sbt_id,
+      proof_key : proof_key
+    }
+  }
+
 }
