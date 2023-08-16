@@ -7,20 +7,26 @@ import { Proof } from "@semaphore-protocol/proof"
 //import * as zksbtJson from "./ABI/Zksbt.json"
 import zksbtJson from "./ABI/Zksbt.json"
 import { generateProof } from "./proof"
-import { ASSET, FileType, ZKSBT_KEY_SIGN_MESSAGE, RANGE, SBT, TREE_DEPTH } from "./common"
+import { FileType, ZKSBT_KEY_SIGN_MESSAGE, TREE_DEPTH, claim_msg, SBT_CATEGORY, POMP_RANGE } from "./common"
 import bigInt from 'big-integer';
 
 interface eventSbtMinted {
   identity: BigNumber;
-  sbt: BigNumber;
+  category: BigNumber;
+  attribute: BigNumber;
+  id: BigNumber;
 }
 
 interface IZKSbt {
   getPublicAddress : () => bigint;
-  claimSbtSignature : (sbt : SBT) => Promise<string>;
-  mint : (sbt : SBT, sig : string) => Promise<void>;
-  generateProof : (sbt : SBT, root : bigint, salt : bigint) => Promise<Proof>;
-  querySbts : () =>  Promise<SBT[]>;
+  claimSbtSignature : (category : bigint, attribute : bigint) => Promise<string>;
+  mint : (category : bigint, attribute : bigint, id : bigint, sig : string) => Promise<void>;
+  generateProof : (category : bigint, attribute : bigint, root : bigint, salt : bigint) => Promise<Proof>;
+  querySbts : () =>  Promise<{
+    category : bigint,
+    attribute : bigint,
+    id : bigint
+  }[]>;
 }
 
 export class ZKSbtSDK implements IZKSbt {
@@ -70,11 +76,14 @@ export class ZKSbtSDK implements IZKSbt {
   }
 
   public async claimSbtSignature(
-    sbt : SBT
+    category : bigint,
+    attribute : bigint,
   ) : Promise<string> {
     const claim_sbt_signature =  await this.signer.signMessage(
-      sbt.claim_msg(
-        this.identity.getCommitment().toString()
+      claim_msg(
+        this.identity.getCommitment().toString(),
+        category,
+        attribute
       )
     );
     console.log("claim_sbt_signature : ", claim_sbt_signature)
@@ -82,28 +91,34 @@ export class ZKSbtSDK implements IZKSbt {
   }
 
   public async mint(
-    sbt : SBT,
+    category : bigint,
+    attribute : bigint,
+    id : bigint,
     sig : string
   ) {
       await (await this.pc.mint(
         [this.identity.getCommitment()],
-        [sbt.normalize()],
+        [category],
+        [attribute],
+        [id],
         [sig],
         {gasLimit : 2000000})
       ).wait()
   }
 
   public async generateProof(
-    sbt : SBT,
+    category : bigint,
+    attribute : bigint,
     root : bigint,
     salt : bigint
   ) : Promise<Proof> {
-    const group = (await this.reconstructOffchainGroup(sbt, root)).group
-    return this.generateSpecialProof(sbt, group, salt)
+    const group = (await this.reconstructOffchainGroup(category, attribute, root)).group
+    return this.generateSpecialProof(category, attribute, group, salt)
   }
 
   public async generateSpecialProof(
-    sbt : SBT,
+    category : bigint,
+    attribute : bigint,
     group : Group,
     salt : bigint
   ) : Promise<Proof> {
@@ -120,7 +135,8 @@ export class ZKSbtSDK implements IZKSbt {
   // constrcut off-chain merkle tree group with in-order on chain data,
   // util match the specific root
   public async reconstructOffchainGroup(
-    sbt : SBT,
+    category : bigint,
+    attribute : bigint,
     root : bigint
   ) {
     const group = new Group(0, TREE_DEPTH, [])
@@ -134,8 +150,8 @@ export class ZKSbtSDK implements IZKSbt {
     // add member to group, until root match
     for (let idx = 0; idx < events.length; idx++) {
       const e : eventSbtMinted = events[idx].args as unknown as eventSbtMinted;
-      //console.log("e : ", e)
-      if (SBT.getMetaData(e[1]).eq(sbt.metaData())) {
+      console.log("e : ", e)
+      if (e[1].eq(category) && e[2].eq(attribute)) {
         group.addMember(e[0])
         if(bigInt(group.root.toString()).eq(root)) {
           console.log("same root, merkle tree construct complete!")
@@ -149,11 +165,12 @@ export class ZKSbtSDK implements IZKSbt {
   }
 
   public async verify(
-    sbt : SBT
+    category : bigint,
+    attribute : bigint,
   ) {
-    const pool = await this.pc.getSbtPool(sbt.category, sbt.attribute)
+    const pool = await this.pc.getSbtPool(category, attribute)
     const onchain_root = await this.pc.getMerkleTreeRoot(pool.id)
-    const group = (await this.reconstructOffchainGroup(sbt, onchain_root.toBigInt())).group
+    const group = (await this.reconstructOffchainGroup(category, attribute, onchain_root.toBigInt())).group
 
     // generate ZKP
     const proof =  await generateProof(
@@ -166,7 +183,8 @@ export class ZKSbtSDK implements IZKSbt {
 
     // on-chain verify
     await (await this.pc.verify(
-      sbt.normalize(),
+      category,
+      attribute,
       proof.publicSignals.nullifierHash,
       proof.proof
     )).wait()
@@ -178,23 +196,31 @@ export class ZKSbtSDK implements IZKSbt {
 
 
   // zkSBT List
-  public async _querySbt(
-    sbt : SBT
+  public async querySbt(
+    category : bigint,
+    attribute : bigint,
   ) {
     // TODO : check SbtMinted event
-    const id = await this.pc.sbt_minted(sbt.metaData(), this.identity.getCommitment())
+    const id = await this.pc.sbt_minted(category, attribute, this.identity.getCommitment())
     return id
   }
 
   public async querySbts() {
-    const sbt_list: SBT[] = []
-    for(const asset in Object.values(ASSET)) {  // TODO : fix
-      for(const range in Object.values(RANGE)) {
-        const sbt:SBT = SBT.createPomp(Number(asset), Number(range))
-        const sbt_id = await this._querySbt(sbt)
+    const sbt_list: {
+      category : bigint,
+      attribute : bigint,
+      id : bigint
+    }[] = []
+    for(const c in Object.values(SBT_CATEGORY)) {  // TODO : fix
+      for(const range in Object.values(POMP_RANGE)) {
+        console.log(" c : ", c, "  range : ", range)
+        const sbt_id = await this.querySbt(BigInt(c), BigInt(range))
         if (sbt_id > 0) {
-          sbt.setId(sbt_id)
-          sbt_list.push(sbt)
+          sbt_list.push({
+            category : BigInt(c),
+            attribute : BigInt(range),
+            id : sbt_id
+          })
         }
       }
     }

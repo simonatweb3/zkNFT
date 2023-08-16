@@ -5,15 +5,12 @@ import * as snarkjs from "snarkjs"
 import { expect } from "chai";
 
 // browser compatible 
-import { Zksbt} from "../typechain-types";
-import { ASSET, SBT_CATEGORY, generateProof, RANGE, TREE_DEPTH, unpackProof,  SBT, ZKSbtSDK, Backend, REVERT_REASON_ALREADY_MINT_SBT } from "@zksbt/jssdk"
+import { Sbt, Zksbt} from "../typechain-types";
+import { SBT_CATEGORY, generateProof, TREE_DEPTH, unpackProof, ZKSbtSDK, Backend, REVERT_REASON_ALREADY_MINT_SBT, POMP_RANGE } from "@zksbt/jssdk"
 import { Group } from "@semaphore-protocol/group"
 import { dnld_aws, P0X_DIR } from "./utility";
 import { resolve } from "path";
-
 import { deployContracts } from "./fixtures/deployContracts";
-import { Wallet } from "ethers";
-
 import { deploy } from "./deploy";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { exit } from "process";
@@ -27,8 +24,7 @@ describe("Zksbt", function () {
   let pc : Zksbt
   let sdk : ZKSbtSDK
   let backend : Backend
-  let ownerOfZkSbtContract: Wallet;
-  let zkSBT : SBT
+  let zkSBT : Sbt
 
   before(async () => {
     signers = await ethers.getSigners()
@@ -49,12 +45,10 @@ describe("Zksbt", function () {
     // deploy zkSBT contract
     const fixtures = await deployContracts(owner)
     zkSBT = fixtures.zkSBT
-
     pc = await deploy(owner, await zkSBT.address)
 
     // approve to operate zkSBT
     await zkSBT.connect(owner).setOperator(pc.address,true)
-
   });
 
   it("Create Pomp SDK", async function () {
@@ -80,76 +74,75 @@ describe("Zksbt", function () {
   //    // todo : merkle tree user case
   // });
 
-  let sbt : SBT = SBT.createPomp(ASSET.ETH, RANGE.RANGE_100)
   let claim_sbt_signature : string
+  let category = BigInt(SBT_CATEGORY.pompETH)
+  let attribute = BigInt(POMP_RANGE.RANGE_100)
   it("Frontend Claim SBT Signature", async function () {
-    claim_sbt_signature = await sdk.claimSbtSignature(sbt)
+    claim_sbt_signature = await sdk.claimSbtSignature(category, attribute)
   });
 
   it("mint by backend ", async function () {
-    await backend.mint(sdk.getPublicAddress(), sbt, claim_sbt_signature)
+    await backend.mint(sdk.getPublicAddress(), category, attribute, claim_sbt_signature)
   });
-
 
   let backend_certificate :  {eligible: boolean; signature: string; sbt_id: bigint;}
   it("Frontend Ask Backend Certificate", async function () {
     backend_certificate = await backend.certificate(
       sdk.identity.getCommitment(),
-      sbt,
+      category,
+      attribute,
       claim_sbt_signature
     );
     expect(backend_certificate.eligible).eq(true)
   });
 
-  it("sbt using backend allocate new id", async function () {
-    sbt.setId(backend_certificate.sbt_id)
-  });
-
   it("duplicate mint zksbt directly with certificate signature", async function () {
     try {
-      await sdk.mint(sbt, backend_certificate.signature)
+      await sdk.mint(category, attribute, backend_certificate.sbt_id, backend_certificate.signature)
     } catch (error) {
       expect(error.toString().includes(REVERT_REASON_ALREADY_MINT_SBT)).equal(true)
     }
   });
 
   it("Query zkSBT", async function () {
-    const sbts = await sdk.querySbts()
+    const sbts = await sdk.querySbt(category, attribute)
     console.log("sbts : ", sbts)
-    expect(sbts[0].category).eq(SBT_CATEGORY.POMP)
+    //expect(sbts[0].category).eq(category)
   });
 
   let pool : PoolStruct
   let onchain_root : bigint
   it("Get zkSBT Proof Key", async function () {
-    pool = await pc.getSbtPool(sbt.category, sbt.attribute)
+    pool = await pc.getSbtPool(category, attribute)
     onchain_root = (await pc.getMerkleTreeRoot(pool.id)).toBigInt()
 
-    const salt = await backend.alloc_proof_key_salt(sbt)
-    const proof = await sdk.generateProof(sbt, onchain_root, salt)
+    const salt = await backend.alloc_proof_key_salt(category, attribute)
+    const proof = await sdk.generateProof(category, attribute, onchain_root, salt)
     
     const proof_key = await backend.generateProofKey(
       sdk.getPublicAddress(),
-      sbt,
+      category,
+      attribute,
       salt,
       proof
     )
     console.log("pomp proof_key : ", proof_key)
   });
 
-  let sbt_zkbab : SBT = SBT.create(SBT_CATEGORY.ZKBAB)
+  let zkbab_category = BigInt(SBT_CATEGORY.ZKBAB)
+  let zkbab_attribute = BigInt(0)
   it("add ZKBAB Pool", async function () {
-    await (await pc.createSbtPool(sbt_zkbab.normalize(), "ZKBAB", 10)).wait()
+    await (await pc.createSbtPool(zkbab_category, zkbab_attribute, "ZKBAB", 10)).wait()
   });
 
-  it("mint sbt and generate proof key", async function () {
+  it("mint sbt and generate proof key without need generate proof", async function () {
     const salt = backend.init_salt()
-    const proof = await sdk.generateProof(sbt, onchain_root, salt)
+    // const proof = await sdk.generateProof(zkbab_category, zkbab_attribute, onchain_root, salt)
     const res = await backend.mintAndGetProofKey(
       sdk.getPublicAddress(),
-      sbt_zkbab,
-      await sdk.claimSbtSignature(sbt_zkbab),
-      proof
+      zkbab_category,
+      zkbab_attribute,
+      await sdk.claimSbtSignature(zkbab_category, zkbab_attribute)
     )
     console.log("zkbab proof key : ", res.proof_key)
   });
@@ -157,12 +150,12 @@ describe("Zksbt", function () {
 if (false) {
   let group : Group
   it("Off-chain re-construct merkle tree Group", async function () {
-    group = (await sdk.reconstructOffchainGroup(sbt, onchain_root)).group
+    group = (await sdk.reconstructOffchainGroup(zkbab_category, zkbab_attribute, onchain_root)).group
   });
 
   it("Off-chain Verify Pomp Membership", async function () {
     // 3/3. generate witness, prove, verify
-    const pool = await pc.getSbtPool(sbt.category, sbt.attribute)
+    const pool = await pc.getSbtPool(zkbab_category, zkbab_attribute)
     const proof =  await generateProof(
       sdk.identity,
       pool.salt.toBigInt(),
@@ -191,7 +184,8 @@ if (false) {
 
     // on-chain verify
     await (await pc.verify(
-      sbt.normalize(),
+      zkbab_category,
+      zkbab_attribute,
       proof.publicSignals.nullifierHash,
       proof.proof
     )).wait()

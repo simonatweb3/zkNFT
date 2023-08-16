@@ -1,16 +1,16 @@
-import {Contract, ethers, Signer} from "ethers"
+import {BigNumber, Contract, ethers, Signer} from "ethers"
 import {Proof } from "@semaphore-protocol/proof"
-import { FileType, SBT} from "./common";
+import { certi_msg, claim_msg, FileType } from "./common";
 import zksbtJson from "./ABI/Zksbt.json"
 
 interface IBackend {
-  checkEligible : (privateAddress : string, sbt : SBT) => boolean;
-  certificate : (publicAddress: bigint, sbt : SBT, sig : string) => 
+  checkEligible : (privateAddress : string, category : bigint, attribute : bigint) => boolean;
+  certificate : (publicAddress: bigint, category : bigint, attribute : bigint, sig : string) => 
     Promise<{ eligible: boolean; signature: string; sbt_id: bigint; }>
-  mint : (publicAddress: bigint, sbt : SBT, sig : string) => 
+  mint : (publicAddress: bigint, category : bigint, attribute : bigint, sig : string) => 
     Promise<{ eligible: boolean; sbt_id: bigint; }>
-  generateProofKey : (publicAddress : bigint, sbt : SBT, salt : bigint, proof : Proof) => Promise<string>;
-  mintAndGetProofKey : (publicAddress: bigint, sbt : SBT, sig : string, proof : Proof) =>
+  generateProofKey : (publicAddress : bigint, category : bigint, attribute : bigint, salt : bigint, proof : Proof) => Promise<string>;
+  mintAndGetProofKey : (publicAddress: bigint, category : bigint, attribute : bigint, sig : string) =>
     Promise<{ eligible: boolean; sbt_id: bigint; proof_key : string }>
 }
 export class Backend implements IBackend {
@@ -33,13 +33,17 @@ export class Backend implements IBackend {
 
   public checkEligible(
     privateAddress : string,
-    sbt : SBT
+    category : bigint,
+    attribute : bigint
   ) : boolean {
     // TODO
     return true
   }
 
-  public allocate_asset_id(sbt : SBT) : bigint {
+  public allocate_asset_id(
+    category : bigint,
+    attribute : bigint
+  ) : bigint {
     // TODO
     //return BigInt(5678);
     return BigInt(Math.floor(Math.random() * Math.pow(2, 32)))
@@ -47,20 +51,23 @@ export class Backend implements IBackend {
 
   public async mint(
     publicAddress : bigint,
-    sbt : SBT,
+    category : bigint,
+    attribute : bigint,
     sig : string
   ) {
     const cert = await this.certificate(
       publicAddress,
-      sbt,
+      category,
+      attribute,
       sig
     );
 
     console.log("cert ", cert)
-    sbt.setId(cert.sbt_id)
     await (await this.pc.mint(
       [publicAddress],
-      [sbt.normalize()],
+      [category],
+      [attribute],
+      [cert.sbt_id],
       [cert.signature],
       {gasLimit : 2000000})
     ).wait()
@@ -74,15 +81,16 @@ export class Backend implements IBackend {
 
   public async certificate(
     publicAddress : bigint,
-    sbt : SBT,
+    category : bigint,
+    attribute : bigint,
     sig : string
   ) {
     const privateAddress = ethers.utils.verifyMessage(
-      sbt.claim_msg(publicAddress.toString()),
+      claim_msg(publicAddress.toString(), category, attribute),
       sig
     )
 
-    if (!this.checkEligible(privateAddress, sbt)) {
+    if (!this.checkEligible(privateAddress, category, attribute)) {
       return {
         eligible : false,
         signature : "",
@@ -91,11 +99,11 @@ export class Backend implements IBackend {
     }
 
     // allocate sbt_id
-    const sbt_id = this.allocate_asset_id(sbt)
+    const sbt_id = this.allocate_asset_id(category, attribute)
 
     // server signature(publicAddress, sbt)
     const certificate_signature = await this.signer.signMessage(
-      sbt.certi_msg(publicAddress.toString(), sbt_id.toString())
+      certi_msg(publicAddress.toString(), category, attribute, sbt_id)
     );
     return {
       eligible : true,
@@ -105,26 +113,29 @@ export class Backend implements IBackend {
   }
 
   public async alloc_proof_key_salt(
-    sbt : SBT
+    category : bigint,
+    attribute : bigint,
   ) {
     // TODO
-    const pool = await this.pc.getSbtPool(sbt.category, sbt.attribute)
+    const pool = await this.pc.getSbtPool(category, attribute)
     return pool.salt.toBigInt()
   }
 
   public async generateProofKey(
     publicAddress : bigint,
-    sbt : SBT,
+    category : bigint,
+    attribute : bigint,
     salt : bigint,
     proof : Proof
     //root : bigint
   ) : Promise<string> {
     // TODO : verify proof
 
-    // hash(proof, publicAddress)
+
+    const id = await this.pc.sbt_minted(category, attribute, publicAddress)
     const bytesData = ethers.utils.defaultAbiCoder.encode(
-      ["uint256[8]", "uint256", "uint256", "uint256"],
-      [proof, publicAddress, sbt.normalize(), salt]
+      ["uint256[8]", "uint256", "uint64", "uint64", "uint128", "uint256"],
+      [proof, publicAddress, category, attribute, id, salt]
     );
     return ethers.utils.keccak256(bytesData); 
   }
@@ -136,12 +147,16 @@ export class Backend implements IBackend {
 
   public async mintAndGetProofKey(
     publicAddress: bigint,
-    sbt : SBT,
-    sig : string,
-    proof : Proof
+    category : bigint,
+    attribute : bigint,
+    sig : string
   ) : Promise<{ eligible: boolean; sbt_id: bigint; proof_key : string }> {
-    const mint_ret = await this.mint(publicAddress, sbt, sig)
-    const proof_key = await this.generateProofKey(publicAddress, sbt, this.init_salt(), proof)
+    const mint_ret = await this.mint(publicAddress, category, attribute, sig)
+    const proof : Proof = [
+      BigInt(0), BigInt(0), BigInt(0), BigInt(0),
+      BigInt(0), BigInt(0), BigInt(0), BigInt(0)
+    ]
+    const proof_key = await this.generateProofKey(publicAddress, category, attribute, this.init_salt(), proof)
     return {
       eligible : mint_ret.eligible,
       sbt_id : mint_ret.sbt_id,
