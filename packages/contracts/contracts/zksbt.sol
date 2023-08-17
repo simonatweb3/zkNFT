@@ -69,6 +69,10 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
     latestStartGroupId = 1;
 
     // TODO : init pompETH-100, pompBNB-100
+    _createSbtPool(1, 0, "ZKBAB", groupDepth);
+    _createSbtPool(2, 0, "ZKKYC", groupDepth);
+    _createSbtPool(12, 0, "pompETH-0", groupDepth);
+    _createSbtPool(13, 0, "pompBNB-0", groupDepth);
     _createSbtPool(12, 100, "pompETH-100", groupDepth);
     _createSbtPool(13, 100, "pompBNB-100", groupDepth);
 
