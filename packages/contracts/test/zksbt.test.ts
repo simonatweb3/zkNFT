@@ -65,8 +65,41 @@ describe("Zksbt", function () {
       resolve(P0X_DIR, "./wasm/zksbt.wasm"),
       resolve(P0X_DIR, "./zkey/zksbt.zkey"),
     );
+
   });
 
+  // it("Mint Sanity Test", async function () {
+
+  //   const identity = [
+  //     '3754797889652379466792370528161869808469561093460138447622645070292361441330',
+  //     '3754797889652379466792370528161869808469561093460138447622645070292361441330'
+  //   ]
+  //   const category = [
+  //     13,
+  //     13
+  //   ]
+  //   const attribute = [
+  //     1,
+  //     1
+  //   ]
+  //   const ids = [
+  //     '1692141368752422913',
+  //     '1692142125571584001'
+  //   ]
+  //   const sigs = [
+  //     '0xfa9da69ec2ff07929fb9fa6eee55e31cbbacedede0c65f7c771e8362c72cac3c1ead825209ec46a7b6f63f4389d23eb3d84a6ef791a6fab7bca0993d6ee1a7191b',
+  //     '0x3314646e1c97aa46b670edf5b4e1cdb635545c6dd180c018439e899a031928d4563fddc5dcab0e8c93ba0da02bb18ef397f6c438af88c5da1a06c355cd4140051c'
+  //   ]
+  //   await (await pc.mint(
+  //     identity,
+  //     category,
+  //     attribute,
+  //     ids,
+  //     sigs
+  //   )).wait()
+  // });
+
+//if (false) {
   // it("Add zkSBT(type, or pomp asset/range)", async function () {
   // });
 
@@ -131,8 +164,9 @@ describe("Zksbt", function () {
 
   let zkbab_category = BigInt(SBT_CATEGORY.ZKBAB)
   let zkbab_attribute = BigInt(0)
+
   it("add ZKBAB Pool", async function () {
-    await (await pc.createSbtPool(zkbab_category, zkbab_attribute, "ZKBAB", 10)).wait()
+    await (await pc.addSbt(zkbab_category, zkbab_attribute, "ZKBAB")).wait()
   });
 
   it("mint sbt and generate proof key without need generate proof", async function () {

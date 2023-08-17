@@ -66,7 +66,7 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
     verifiers[groupDepth] = _verifier;
 
     // init build-in zksbt pool
-    latestStartGroupId = 0;
+    latestStartGroupId = 1;
 
     // TODO : init pompETH-100, pompBNB-100
     _createSbtPool(12, 100, "pompETH-100", groupDepth);
@@ -166,6 +166,7 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
       uint identity = identity[idx];
       uint category = category[idx];
       uint attribute = attribute[idx];
+      require(pools[category][attribute].id != 0, "sbt pool not exist!");
       uint id = ids[idx];
       bytes memory message = sbt_claim_message(identity, category, attribute, id);
       bytes32 msgHash = ECDSA.toEthSignedMessageHash(message);
