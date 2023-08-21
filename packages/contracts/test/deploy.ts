@@ -14,6 +14,7 @@ const hre = require('hardhat');
 export async function deploy(
   owner : SignerWithAddress,
   Sbt : string,
+  ZK_GROUP_GURANTEE : number
 ) {
     // deploy contract : poseidon(2)
     const NINPUT = 2
@@ -53,7 +54,7 @@ export async function deploy(
     //   poolDepth : 10,
     //   _iSbt : Sbt
     // }]
-    const params = [v.address, 10, Sbt]
+    const params = [v.address, ZK_GROUP_GURANTEE, Sbt]
     const pc = await upgrades.deployProxy(ContractFactory, params, { unsafeAllowLinkedLibraries: ['IncrementalBinaryTree'] })
     await pc.deployed()
     //const pc = await ContractFactory.deploy(v.address, 10, Sbt, {gasLimit : 10000000})
@@ -85,7 +86,7 @@ if (process.env.DEPLOY_ZKSBT) {
       //const ownerOfZkSbtContract = fixtures.ownerOfZkSbtContract
       const zkSBT = fixtures.zkSBT
 
-      const pc = await deploy(owner, await zkSBT.address)
+      const pc = await deploy(owner, await zkSBT.address, 10)
 
       // approve to operate zkSBT
       await zkSBT.connect(owner).setOperator(pc.address,true)

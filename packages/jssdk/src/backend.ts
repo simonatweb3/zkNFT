@@ -62,7 +62,7 @@ export class Backend implements IBackend {
       sig
     );
 
-    console.log("cert ", cert)
+    //console.log("cert ", cert)
     await (await this.pc.mint(
       [publicAddress],
       [category],

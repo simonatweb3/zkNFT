@@ -45,7 +45,7 @@ describe("Zksbt", function () {
     // deploy zkSBT contract
     const fixtures = await deployContracts(owner)
     zkSBT = fixtures.zkSBT
-    pc = await deploy(owner, await zkSBT.address)
+    pc = await deploy(owner, await zkSBT.address, 1)
 
     // approve to operate zkSBT
     await zkSBT.connect(owner).setOperator(pc.address,true)
@@ -114,8 +114,19 @@ describe("Zksbt", function () {
     claim_sbt_signature = await sdk.claimSbtSignature(category, attribute)
   });
 
-  it("mint by backend ", async function () {
+  it("mint by backend more than gurantee", async function () {
     await backend.mint(sdk.getPublicAddress(), category, attribute, claim_sbt_signature)
+    await backend.mint(sdk.getPublicAddress(), category, attribute, claim_sbt_signature)
+    const groupId = await pc.sbt_group(category, attribute, sdk.getPublicAddress())
+    
+    await backend.mint(sdk.getPublicAddress(), category, attribute, claim_sbt_signature)
+    let newGroupId = await pc.sbt_group(category, attribute, sdk.getPublicAddress())
+    expect(groupId.add(1).toBigInt()).eq(newGroupId.toBigInt())
+    await backend.mint(sdk.getPublicAddress(), category, attribute, claim_sbt_signature)
+  
+    await backend.mint(sdk.getPublicAddress(), category, attribute, claim_sbt_signature)
+    newGroupId = await pc.sbt_group(category, attribute, sdk.getPublicAddress())
+    expect(groupId.add(2).toBigInt()).eq(newGroupId.toBigInt())
   });
 
   let backend_certificate :  {eligible: boolean; signature: string; sbt_id: bigint;}

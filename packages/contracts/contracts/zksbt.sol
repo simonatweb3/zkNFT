@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./interface/sbt.sol";
 import "./upgradeableLib/Ownable.sol";
-//import "hardhat/console.sol";
+import "hardhat/console.sol";
 
 interface IVerifier {
   function verifyProof(
@@ -60,7 +60,7 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
   ) external initializer {
     _initOwnable();
 
-    groupIdOffset = SBT_CAPACITY - groupDepth;
+    groupIdOffset = 1 << (SBT_CAPACITY - groupDepth);
 
     // zksbt verifier
     verifiers[groupDepth] = _verifier;
@@ -80,13 +80,13 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
   }
 
 
-  // TODO: re-entracy control
   function _createSbtPool(
     uint category,
     uint attribute,
     string memory name,
     uint groupDepth
   ) internal {
+    console.log("sol add new group ", latestStartGroupId);
     _createGroup(latestStartGroupId, groupDepth);
     pools[category][attribute] = Pool({
       id: latestStartGroupId,
@@ -147,10 +147,11 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
   ) private {
     Pool storage pool = pools[category][attribute];
     uint startGroupId = pool.id;
-    uint curGroup = startGroupId + pool.amount / (2 << pool.depth);
-    if (pool.amount!= 0 && pool.amount % (2 << pool.depth) == 0) {
+    uint curGroup = startGroupId + pool.amount / (1 << pool.depth);
+    if (pool.amount!= 0 && (pool.amount % (1 << pool.depth) == 0)) {
       // new group
-      _createGroup(++curGroup , pool.depth);
+      console.log("sol add new group ", curGroup);
+      _createGroup(curGroup , pool.depth);
     }
     _addMember(curGroup, identity);
     sbt_group[category][attribute][identity] = curGroup;

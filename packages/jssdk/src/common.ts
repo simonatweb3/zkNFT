@@ -29,7 +29,7 @@ export function claim_msg(
   SBT_CLAIM_MSG += " identity " + publicAddress.toString()
   SBT_CLAIM_MSG += " sbt category " + category.toString()
   SBT_CLAIM_MSG += " sbt attribute " + attribute.toString()
-  console.log("sbt.claim_message : ", SBT_CLAIM_MSG)
+  //console.log("sbt.claim_message : ", SBT_CLAIM_MSG)
   return SBT_CLAIM_MSG
 }
 
@@ -40,6 +40,6 @@ export function certi_msg(
   id : bigint
 ) {
   const SBT_CERTI_MSG = claim_msg(publicAddress, category, attribute) + " sbt id " + id.toString()
-  console.log("SBT_CERTI_MSG : ", SBT_CERTI_MSG)
+  //console.log("SBT_CERTI_MSG : ", SBT_CERTI_MSG)
   return SBT_CERTI_MSG
 }
