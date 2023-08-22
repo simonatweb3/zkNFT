@@ -7,9 +7,9 @@ zkey
 
 .yarn/*
 **/yarn-error.log
-**/pomp.r1cs
-**/pomp.sym
-**/pomp_constraints.json
+**/zksbt.r1cs
+**/zksbt.sym
+**/zksbt_constraints.json
 
 !.yarn/patches
 !.yarn/plugins

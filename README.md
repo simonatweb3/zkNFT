@@ -46,11 +46,13 @@
     yarn deploy --network manta;
 ```
 
-VERIFIER = 0x97B41d3F0b78f5Ae22e02bcECBaEf680878009CA
-SBT = 0x2deE1b91f02C5F94FfBE62C427A1dB828E314153
-ZKSBT = 0x41dB82dCa42363e8C88797eFf77e1279Ef3D5AAA
-
 5. Contract Upgrade
 ```shell
     yarn upgrade --network manta
 ```
+
+
+# Design Trade-off
+
+1. merkle tree depth
+    - 16 : prove time 2s

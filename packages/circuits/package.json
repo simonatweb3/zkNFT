@@ -6,7 +6,7 @@
     "lint:ts": "eslint .",
     "lint": "yarn lint:ts",
     "build": "ts-node utils/build_circuits.ts",
-    "test": "ts-node tests/pomp.test.ts"
+    "test": "ts-node tests/zksbt.test.ts"
   },
   "dependencies": {
     "@semaphore-protocol/group": "^3.10.1",

@@ -45,7 +45,7 @@ template CalculateIdentityCommitment() {
 
 
 // nLevels must be < 32.
-template Pomp(nLevels) {
+template Zksbt(nLevels) {
     signal input identityNullifier;
     signal input identityTrapdoor;
     signal input treePathIndices[nLevels];
@@ -67,7 +67,7 @@ template Pomp(nLevels) {
     component calculateIdentityCommitment = CalculateIdentityCommitment();
     calculateIdentityCommitment.secret <== secret;
 
-    // pomp zksbt-bind identity
+    // zksbt-bind identity
     // component poseidon = Poseidon(2);
     // poseidon.inputs[0] <== calculateIdentityCommitment.out;
     // poseidon.inputs[1] <== zksbt;
@@ -77,7 +77,7 @@ template Pomp(nLevels) {
     calculateNullifierHash.identityNullifier <== identityNullifier;
 
     component inclusionProof = MerkleTreeInclusionProof(nLevels);
-    //inclusionProof.leaf <== poseidon.out; // using pomp zksbt-bind identity.
+    //inclusionProof.leaf <== poseidon.out; // using zksbt-bind identity.
     inclusionProof.leaf <== calculateIdentityCommitment.out;
 
     for (var i = 0; i < nLevels; i++) {
@@ -89,4 +89,4 @@ template Pomp(nLevels) {
     nullifierHash <== calculateNullifierHash.out;
 }
 
-component main {public [externalNullifier]} = Pomp(10);
+component main {public [externalNullifier]} = Zksbt(16);

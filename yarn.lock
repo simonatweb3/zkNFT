@@ -1809,27 +1809,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@semaphore-protocol/group@npm:3.10.1":
-  version: 3.10.1
-  resolution: "@semaphore-protocol/group@npm:3.10.1"
+"@semaphore-protocol/group@npm:^3.10.1":
+  version: 3.11.0
+  resolution: "@semaphore-protocol/group@npm:3.11.0"
   dependencies:
     "@ethersproject/bignumber": ^5.7.0
     "@ethersproject/bytes": ^5.7.0
     "@ethersproject/keccak256": ^5.7.0
     "@zk-kit/incremental-merkle-tree": 1.1.0
-  checksum: dc78bc2b654e80a250f78aa434cf8729e69d52caafb1866e3bc3c063f7b289c86dad83c5954ae25fa42c62b8811cccaecf61977328c8908a1f3bc071966d0e4f
-  languageName: node
-  linkType: hard
-
-"@semaphore-protocol/group@patch:@semaphore-protocol/group@npm%3A3.10.1#./.yarn/patches/@semaphore-protocol-group-npm-3.10.1-32edec9bbc.patch::locator=zksbt%40workspace%3A.":
-  version: 3.10.1
-  resolution: "@semaphore-protocol/group@patch:@semaphore-protocol/group@npm%3A3.10.1#./.yarn/patches/@semaphore-protocol-group-npm-3.10.1-32edec9bbc.patch::version=3.10.1&hash=8d3bb2&locator=zksbt%40workspace%3A."
-  dependencies:
-    "@ethersproject/bignumber": ^5.7.0
-    "@ethersproject/bytes": ^5.7.0
-    "@ethersproject/keccak256": ^5.7.0
-    "@zk-kit/incremental-merkle-tree": 1.1.0
-  checksum: 124bb1d8198d6482310176f1cd2bd8b2e575a9f3a72f1249c234874d5b1ff59e4e7df46c3e10e092180ab97e15be80885a73e789f3918ba4db6879f858603bf1
+  checksum: b106950ba2215427bbb76ea3e0898820c07586c35ff02cd4a7793bc2b085049677ac7328fbb8207ac958ee092462416ab11d377f6f8c4654d6ef807dd2426885
   languageName: node
   linkType: hard
 

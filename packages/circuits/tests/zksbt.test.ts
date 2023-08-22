@@ -11,7 +11,7 @@ import { expect } from "chai";
 import * as fs from "fs";
 import hash from "./hash"
 const snarkjs = require('snarkjs');
-const TREE_DEPTH = 10
+const TREE_DEPTH = 16
 
 export function get_circuit_wasm_file(
     CUR_CIRCUIT : string
@@ -77,9 +77,8 @@ export default async function generateProof(
 ): Promise<FullProof> {
     console.log(new Date().toUTCString() + " generateProof for wasm : ", wasmFile, ", zkey : ", zkeyFile)
 
-    //const pomp_commitment = poseidon2([identity.getCommitment(), zksbt])
-    const pomp_commitment = identity.getCommitment()
-    const merkleProof: MerkleProof = group.generateMerkleProof(group.indexOf(pomp_commitment))
+    const zksbt_commitment = identity.getCommitment()
+    const merkleProof: MerkleProof = group.generateMerkleProof(group.indexOf(zksbt_commitment))
 
     const { proof, publicSignals } = await snarkjs.groth16.fullProve(
         {
@@ -114,9 +113,6 @@ async function test() {
     )
 
     // 2/3. add identity to group
-    // const zksbt = BigInt(5678)
-    // const pomp_commitment = poseidon2([identity.getCommitment(), zksbt])
-    // const group = new Group(123, TREE_DEPTH, [pomp_commitment])
     const group = new Group(123, TREE_DEPTH, [identity.getCommitment()])
 
     // 3/3. generate witness, prove, verify
@@ -126,14 +122,14 @@ async function test() {
         externalNullifier,
         //zksbt,
         group,
-        get_circuit_wasm_file("pomp"),
-        get_circuit_zkey_file("pomp").growth16
+        get_circuit_wasm_file("zksbt"),
+        get_circuit_zkey_file("zksbt").growth16
     )
 
     // off-chain verify proof
     const zkey_final = {
         type : "mem",
-        data : new Uint8Array(Buffer.from(fs.readFileSync(get_circuit_zkey_file("pomp").growth16)))
+        data : new Uint8Array(Buffer.from(fs.readFileSync(get_circuit_zkey_file("zksbt").growth16)))
     }
     const vKey = await snarkjs.zKey.exportVerificationKey(zkey_final);
     expect(await snarkjs.groth16.verify(
