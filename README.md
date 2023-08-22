@@ -55,4 +55,6 @@
 # Design Trade-off
 
 1. merkle tree depth
-    - 16 : prove time 2s
+    - 16 : build 60s, zkey 1.9M, prove time 2s, mint gas < 1M
+    - 20 : build 66s, zkey 3.7M, prove time 2s, mint gas 
+    - 32 : build 95s, zkey 5.0M, prove time 2s, mint gas < 3M

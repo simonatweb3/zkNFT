@@ -89,4 +89,4 @@ template Zksbt(nLevels) {
     nullifierHash <== calculateNullifierHash.out;
 }
 
-component main {public [externalNullifier]} = Zksbt(16);
+component main {public [externalNullifier]} = Zksbt(32);

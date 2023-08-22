@@ -63,13 +63,14 @@ export class Backend implements IBackend {
     );
 
     //console.log("cert ", cert)
+
     await (await this.pc.mint(
       [publicAddress],
       [category],
       [attribute],
       [cert.sbt_id],
       [cert.signature],
-      {gasLimit : 2000000})
+      {gasLimit : 3000000})
     ).wait()
 
     return {

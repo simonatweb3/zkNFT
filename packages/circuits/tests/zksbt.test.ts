@@ -11,7 +11,7 @@ import { expect } from "chai";
 import * as fs from "fs";
 import hash from "./hash"
 const snarkjs = require('snarkjs');
-const TREE_DEPTH = 16
+const TREE_DEPTH = 32
 
 export function get_circuit_wasm_file(
     CUR_CIRCUIT : string

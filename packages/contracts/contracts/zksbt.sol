@@ -30,7 +30,7 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
 
   bytes constant public VERSION = "0.5";
   uint constant SBT_CAPACITY = 128;
-  uint constant SBT_GROUP_GUARANTEE = 16;
+  uint constant SBT_GROUP_GUARANTEE = 32;
   bytes constant ZKSBT_CLAIM_MESSAGE = "Sign this meesage to claim zkSBT : ";
   mapping(uint256 => IVerifier) public verifiers;
 
