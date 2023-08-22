@@ -3,6 +3,7 @@ import { ethers, upgrades } from "hardhat"
 import * as fs from 'fs';
 import { verify, verify2, writeToEnv } from "./verify";
 import { ZksbtVerifier__factory } from "../typechain-types";
+import { TREE_DEPTH } from "@zksbt/jssdk";
 const hre = require('hardhat');
 
 async function upgradeVerifier(
@@ -40,7 +41,7 @@ async function upgradeZksbt(
         }
       })
 
-    const params = [VERIFIER_ADDR, 10, SBT_ADDR]
+    const params = [VERIFIER_ADDR, TREE_DEPTH, SBT_ADDR]
     const c = await upgrades.upgradeProxy(PROXY_ADDR, cf, { unsafeAllowLinkedLibraries: ['IncrementalBinaryTree'] })
     await c.deployed()
 

@@ -9,6 +9,7 @@ import { deployContracts } from "./fixtures/deployContracts";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { verify, verify2, writeToEnv } from "./verify";
 import * as fs from 'fs';
+import { TREE_DEPTH } from "@zksbt/jssdk";
 const hre = require('hardhat');
 
 export async function deploy(
@@ -86,7 +87,7 @@ if (process.env.DEPLOY_ZKSBT) {
       //const ownerOfZkSbtContract = fixtures.ownerOfZkSbtContract
       const zkSBT = fixtures.zkSBT
 
-      const pc = await deploy(owner, await zkSBT.address, 10)
+      const pc = await deploy(owner, await zkSBT.address, TREE_DEPTH)
 
       // approve to operate zkSBT
       await zkSBT.connect(owner).setOperator(pc.address,true)
