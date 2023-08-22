@@ -11,6 +11,11 @@
     "ethers": "5.7.2",
     "poseidon-lite": "^0.2.0"
   },
+  "peerDependencies": {
+    "@semaphore-protocol/group": "^3.10.1",
+    "@semaphore-protocol/identity": "^3.10.1",
+    "@semaphore-protocol/proof": "^3.10.1"
+  },
   "scripts": {
     "lint:ts": "eslint .",
     "lint": "yarn lint:ts",
