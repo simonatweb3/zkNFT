@@ -3404,22 +3404,23 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@zksbt/jssdk@workspace:packages/jssdk"
   dependencies:
+    "@semaphore-protocol/group": ^3.10.1
     "@semaphore-protocol/identity": ^3.10.1
+    "@semaphore-protocol/proof": ^3.10.1
     "@typechain/ethers-v5": ^11.1.1
     "@types/chai": ^4.3.5
     "@types/node": ^20.3.2
+    big-integer: ^1.6.51
     chai: ^4.3.7
     eslint: ^8.45.0
     ethers: 5.7.2
-    poseidon-lite: ^0.2.0
     puppeteer: ^20.8.0
     ts-node: ^10.9.1
     typechain: ^8.2.0
     typescript: 4.9.3
   peerDependencies:
-    "@semaphore-protocol/group": ^3.10.1
-    "@semaphore-protocol/identity": ^3.10.1
-    "@semaphore-protocol/proof": ^3.10.1
+    poseidon-lite: ^0.2.0
+    snarkjs: 0.7.0
   languageName: unknown
   linkType: soft
 
@@ -4968,7 +4969,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"big-integer@npm:^1.6.16, big-integer@npm:^1.6.42, big-integer@npm:^1.6.44, big-integer@npm:^1.6.48":
+"big-integer@npm:^1.6.16, big-integer@npm:^1.6.42, big-integer@npm:^1.6.44, big-integer@npm:^1.6.48, big-integer@npm:^1.6.51":
   version: 1.6.51
   resolution: "big-integer@npm:1.6.51"
   checksum: 3d444173d1b2e20747e2c175568bedeebd8315b0637ea95d75fd27830d3b8e8ba36c6af40374f36bdaea7b5de376dcada1b07587cb2a79a928fccdb6e6e3c518
@@ -13754,13 +13755,6 @@ __metadata:
   version: 5.0.0
   resolution: "pngjs@npm:5.0.0"
   checksum: 04e912cc45fb9601564e2284efaf0c5d20d131d9b596244f8a6789fc6cdb6b18d2975a6bbf7a001858d7e159d5c5c5dd7b11592e97629b7137f7f5cef05904c8
-  languageName: node
-  linkType: hard
-
-"poseidon-lite@npm:^0.2.0":
-  version: 0.2.0
-  resolution: "poseidon-lite@npm:0.2.0"
-  checksum: c47c6fd0a29a78ca1f7cf6ccb8b0c4f4e72930d944e63425e36f60c15d37fb0aeca30b8a22a30640ed68d631142282c0b8308da83b1a2b2bb92b87f5a2432c93
   languageName: node
   linkType: hard
 
