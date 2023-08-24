@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./interface/sbt.sol";
 import "./upgradeableLib/Ownable.sol";
-import "hardhat/console.sol";
 
 interface IVerifier {
   function verifyProof(
@@ -19,7 +18,8 @@ interface IVerifier {
 }
 
 struct Pool {
-  uint id;  // reserve group[id ~ id + offset], sbt capacity 2<<128
+  // reserve group[id ~ id + offset], sbt capacity 2<<128
+  uint id;
   string name;
   uint depth;
   uint salt;
@@ -69,24 +69,23 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
     latestStartGroupId = 1;
 
     // TODO : init pompETH-100, pompBNB-100
-    _createSbtPool(1, 0, "ZKBAB", groupDepth);
-    _createSbtPool(2, 0, "ZKKYC", groupDepth);
-    _createSbtPool(12, 0, "pompETH-0", groupDepth);
-    _createSbtPool(13, 0, "pompBNB-0", groupDepth);
-    _createSbtPool(12, 100, "pompETH-100", groupDepth);
-    _createSbtPool(13, 100, "pompBNB-100", groupDepth);
+    _addSbt(1, 0, "ZKBAB", groupDepth);
+    _addSbt(2, 0, "ZKKYC", groupDepth);
+    _addSbt(12, 0, "pompETH-0", groupDepth);
+    _addSbt(13, 0, "pompBNB-0", groupDepth);
+    _addSbt(12, 100, "pompETH-100", groupDepth);
+    _addSbt(13, 100, "pompBNB-100", groupDepth);
 
     iSbt = _iSbt;
   }
 
 
-  function _createSbtPool(
+  function _addSbt(
     uint category,
     uint attribute,
     string memory name,
     uint groupDepth
   ) internal {
-    console.log("sol add new group ", latestStartGroupId);
     _createGroup(latestStartGroupId, groupDepth);
     pools[category][attribute] = Pool({
       id: latestStartGroupId,
@@ -105,21 +104,12 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
     return pools[category][attribute];
   }
 
-  function createSbtPool(
-    uint category,
-    uint attribute,
-    string calldata name,
-    uint groupDepth
-  ) public onlyOwner {
-    _createSbtPool(category, attribute, name, groupDepth);
-  }
-
   function addSbt(
     uint category,
     uint attribute,
     string calldata name
   ) public onlyOwner {
-    createSbtPool(category, attribute, name, SBT_GROUP_GUARANTEE);
+    _addSbt(category, attribute, name, SBT_GROUP_GUARANTEE);
   }
 
   function sbt_claim_message(
@@ -150,7 +140,6 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
     uint curGroup = startGroupId + pool.amount / (1 << pool.depth);
     if (pool.amount!= 0 && (pool.amount % (1 << pool.depth) == 0)) {
       // new group
-      console.log("sol add new group ", curGroup);
       _createGroup(curGroup , pool.depth);
     }
     _addMember(curGroup, identity);
@@ -183,8 +172,6 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
 
       addMember(category, attribute, identity);
       sbt_minted[category][attribute][identity] = id;
-      // console.log("sol category ", category, " attribute ", attribute);
-      // console.log("identity ", identity, "id ", id);
 
       bool success = iSbt.mintWithSbtId(identity, category, attribute, id);
       require(success, "failed to mint zkSBT");

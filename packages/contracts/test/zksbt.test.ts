@@ -243,7 +243,7 @@ if (false) {
 
   let sbt_zkbab : SBT = SBT.create(SBT_CATEGORY.ZKBAB)
   it("add ZKBAB Pool", async function () {
-    await (await pc.createSbtPool(sbt_zkbab.normalize(), "ZKBAB", 10)).wait()
+    await (await pc.addSbt(sbt_zkbab.normalize(), "ZKBAB", 10)).wait()
   });
 
   it("mint sbt from backend", async function () {
