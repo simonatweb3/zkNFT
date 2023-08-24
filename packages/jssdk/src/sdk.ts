@@ -7,7 +7,7 @@ import { Proof } from "@semaphore-protocol/proof"
 //import * as zksbtJson from "./ABI/Zksbt.json"
 import zksbtJson from "./ABI/Zksbt.json"
 import { generateProof } from "./proof"
-import { FileType, ZKSBT_KEY_SIGN_MESSAGE, TREE_DEPTH, claim_msg, SBT_CATEGORY, POMP_RANGE } from "./common"
+import { FileType, ZKSBT_KEY_SIGN_MESSAGE, TREE_DEPTH, claim_msg, SBT_CATEGORY, POMP_RANGE, ZKSBT_CONTRACT_ADDR } from "./common"
 import bigInt from 'big-integer';
 import { generateIdentityProof } from "./identity_proof"
 
@@ -23,11 +23,6 @@ interface IZKSbt {
   claimSbtSignature : (category : bigint, attribute : string) => Promise<string>;
   mint : (category : bigint, attribute : string, id : bigint, sig : string) => Promise<void>;
   generateProof : (category : bigint, attribute : string, root : bigint, salt : bigint) => Promise<Proof>;
-  querySbts : () =>  Promise<{
-    category : bigint,
-    attribute : string,
-    id : bigint
-  }[]>;
 }
 
 export class ZKSbtSDK implements IZKSbt {
@@ -51,12 +46,12 @@ export class ZKSbtSDK implements IZKSbt {
   }
 
   public static create = async (
-    zksbtContract: string,
     signer: Signer,
-    zksbt_wasm: FileType,
-    zksbt_zkey: FileType,
-    identity_wasm: FileType,
-    identity_zkey: FileType
+    zksbtContract: string = ZKSBT_CONTRACT_ADDR,
+    zksbt_wasm: FileType = "https://p0x-labs.s3.amazonaws.com/zksbt/wasm/zksbt.wasm",
+    zksbt_zkey: FileType = "https://p0x-labs.s3.amazonaws.com/zksbt/zkey/zksbt.zkey",
+    identity_wasm: FileType = "https://p0x-labs.s3.amazonaws.com/zksbt/wasm/zksbt.wasm",
+    identity_zkey: FileType = "https://p0x-labs.s3.amazonaws.com/zksbt/zkey/identity.zkey"
   ): Promise<ZKSbtSDK> => {
     const identity = ZKSbtSDK.generateIdentity(JSON.stringify(await ZKSbtSDK.generateAccountPrivKeys(signer)))
     const ctx = new ZKSbtSDK(zksbtContract, signer, identity);
@@ -93,7 +88,7 @@ export class ZKSbtSDK implements IZKSbt {
         attribute
       )
     );
-    console.log("claim_sbt_signature : ", claim_sbt_signature)
+    //console.log("claim_sbt_signature : ", claim_sbt_signature)
     return claim_sbt_signature
   }
 
@@ -103,7 +98,7 @@ export class ZKSbtSDK implements IZKSbt {
     id : bigint,
     sig : string
   ) {
-      await (await this.pc.mint(
+      return await (await this.pc.mint(
         [this.identity.getCommitment()],
         [category],
         [attribute],

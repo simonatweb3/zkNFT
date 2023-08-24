@@ -1,6 +1,7 @@
 export type FileType = any;
+export const ZKSBT_CONTRACT_ADDR = "0xb959302e6f141634FAb0F4594Eb56eB93A150e81"
 export const ZKSBT_KEY_SIGN_MESSAGE =
-  "Sign this message to generate your Pomp Privacy Key. This key lets the application decrypt your identity on Pomp.\n\nIMPORTANT: Only sign this message if you trust the application.";
+  "Sign this message to generate your Zksbt Privacy Key. This key lets the application decrypt your identity on Zksbt.\n\nIMPORTANT: Only sign this message if you trust the application.";
 export const ZKSBT_CLAIM_MSG = "Sign this meesage to claim zkSBT : "
 export const TREE_DEPTH = 32
 export const REVERT_REASON_HEADER = "VM Exception while processing transaction: reverted with reason string "

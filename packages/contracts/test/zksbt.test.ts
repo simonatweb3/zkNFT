@@ -55,8 +55,8 @@ describe("Zksbt", function () {
 
   it("Create Pomp SDK", async function () {
     sdk = await ZKSbtSDK.create(
-      pc.address,
       owner,
+      pc.address,
       resolve(P0X_DIR, "./wasm/zksbt.wasm"),
       resolve(P0X_DIR, "./zkey/zksbt.zkey"),
       resolve(P0X_DIR, "./wasm/identity.wasm"),
