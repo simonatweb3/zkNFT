@@ -1,7 +1,8 @@
 import { build_circuit, calculate_checksum, parse_checksum } from "./utils";
 
 const circuit_list = [
-    ["circuits/zksbt", "zksbt"]
+    ["circuits/zksbt", "zksbt"],
+    ["circuits/identity", "identity"]
 ];
 
 async function main() {

@@ -2,7 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { ethers, upgrades } from "hardhat"
 import * as fs from 'fs';
 import { verify, verify2, writeToEnv } from "./verify";
-import { ZksbtVerifier__factory } from "../typechain-types";
+import { IdentityVerifier__factory, ZksbtVerifier__factory } from "../typechain-types";
 import { TREE_DEPTH } from "@zksbt/jssdk";
 const hre = require('hardhat');
 
@@ -26,11 +26,32 @@ async function upgradeVerifier(
 
 }
 
+async function upgradeIdentityVerifier(
+  owner : SignerWithAddress
+) {
+  const PROXY_ADDR = process.env.IDENTITY_VERIFIER
+  const cf : IdentityVerifier__factory = new IdentityVerifier__factory(owner)
+
+  let old_target = await upgrades.erc1967.getImplementationAddress(PROXY_ADDR)
+  const c = await upgrades.upgradeProxy(PROXY_ADDR, cf)
+  await c.deployed()
+
+  let new_target = await upgrades.erc1967.getImplementationAddress(PROXY_ADDR)
+  let upgrade_flag = "\n# ++++++ upgrade " + hre.hardhatArguments.network + " on " + new Date().toUTCString() + " ++++++++++++"
+  fs.appendFileSync('.env', upgrade_flag)
+  if (old_target.toLowerCase() != new_target.toLowerCase()) {
+    writeToEnv("# IDENTITY VERIFIER PROXY " + PROXY_ADDR + " NEW_TARGET", new_target)
+      await verify(new_target)
+  }
+
+}
+
 async function upgradeZksbt(
     owner : SignerWithAddress
 ) {
     const IBTREE_ADDR = process.env.IBTree
     const VERIFIER_ADDR = process.env.VERIFIER
+    const IDENTITY_VERIFIER_ADDR = process.env.IDENTITY_VERIFIER
     const SBT_ADDR = process.env.SBT
     const PROXY_ADDR = process.env.ZKSBT
     let old_target = await upgrades.erc1967.getImplementationAddress(PROXY_ADDR)
@@ -41,7 +62,7 @@ async function upgradeZksbt(
         }
       })
 
-    const params = [VERIFIER_ADDR, TREE_DEPTH, SBT_ADDR]
+    const params = [VERIFIER_ADDR, IDENTITY_VERIFIER_ADDR, TREE_DEPTH, SBT_ADDR]
     const c = await upgrades.upgradeProxy(PROXY_ADDR, cf, { unsafeAllowLinkedLibraries: ['IncrementalBinaryTree'] })
     await c.deployed()
 
@@ -59,6 +80,7 @@ async function upgrade(
     owner : SignerWithAddress
 ) {
     await upgradeVerifier(owner)
+    await upgradeIdentityVerifier(owner)
     await upgradeZksbt(owner)
 }
 

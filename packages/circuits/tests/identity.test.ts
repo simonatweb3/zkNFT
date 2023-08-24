@@ -1,5 +1,3 @@
-import { MerkleProof } from "@zk-kit/incremental-merkle-tree";
-import { Group } from "@semaphore-protocol/group"
 import { Identity } from "@semaphore-protocol/identity"
 import {BigNumberish, Proof, SnarkJSProof } from "@semaphore-protocol/proof"
 // import packProof from "@semaphore-protocol/proof/src/packProof"
@@ -10,7 +8,6 @@ import { expect } from "chai";
 import * as fs from "fs";
 import hash from "./hash"
 const snarkjs = require('snarkjs');
-const TREE_DEPTH = 32
 
 export function get_circuit_wasm_file(
     CUR_CIRCUIT : string
@@ -31,7 +28,7 @@ export function get_circuit_zkey_file(
 
 
 export declare type PublicSignals = {
-    merkleRoot: BigNumberish;
+    identityCommitment: BigNumberish;
     nullifierHash: BigNumberish;
     externalNullifier: BigNumberish;
 };
@@ -69,35 +66,29 @@ function unpackProof(proof: Proof): SnarkJSProof {
 export default async function generateProof(
     identity : Identity,
     externalNullifier: BytesLike | Hexable | number | bigint,
-    //zksbt : bigint,
-    group: Group,
     wasmFile : string,
     zkeyFile : string
 ): Promise<FullProof> {
     console.log(new Date().toUTCString() + " generateProof for wasm : ", wasmFile, ", zkey : ", zkeyFile)
 
-    const zksbt_commitment = identity.getCommitment()
-    const merkleProof: MerkleProof = group.generateMerkleProof(group.indexOf(zksbt_commitment))
-
     const { proof, publicSignals } = await snarkjs.groth16.fullProve(
         {
             identityTrapdoor: identity.getTrapdoor(),
             identityNullifier: identity.getNullifier(),
-            treePathIndices: merkleProof.pathIndices,
-            treeSiblings: merkleProof.siblings,
             externalNullifier: hash(externalNullifier)
-            //zksbt : zksbt
         },
         wasmFile,
         zkeyFile
     )
 
+    console.log("generateProof publicSignals : ", publicSignals)
+
     const fullProof = {
         proof : packProof(proof),
         publicSignals: {
-            merkleRoot: publicSignals[0],
-            nullifierHash: publicSignals[1],
-            externalNullifier: BigNumber.from(externalNullifier).toString()
+            externalNullifier: BigNumber.from(externalNullifier).toString(),
+            identityCommitment : identity.getCommitment().toString(),
+            nullifierHash: publicSignals[1]
         }
     }
 
@@ -111,16 +102,11 @@ async function test() {
         "{ trapdoor : 1, nullifier : 2}"
     )
 
-    // 2/3. add identity to group
-    const group = new Group(123, TREE_DEPTH, [identity.getCommitment()])
-
     // 3/3. generate witness, prove, verify
     const externalNullifier = "1234"
     const proof =  await generateProof(
         identity,
         externalNullifier,
-        //zksbt,
-        group,
         get_circuit_wasm_file("zksbt"),
         get_circuit_zkey_file("zksbt").growth16
     )
@@ -134,7 +120,7 @@ async function test() {
     expect(await snarkjs.groth16.verify(
         vKey,
         [
-            proof.publicSignals.merkleRoot,
+            proof.publicSignals.identityCommitment,
             proof.publicSignals.nullifierHash,
             hash(externalNullifier)
         ],

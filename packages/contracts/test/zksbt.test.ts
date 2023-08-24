@@ -34,6 +34,8 @@ describe("Zksbt", function () {
       [
         "wasm/zksbt.wasm",
         "zkey/zksbt.zkey",
+        "wasm/identity.wasm",
+        "zkey/identity.zkey",
       ].map(async (e) => {
         await dnld_aws(e);
       }),
@@ -57,6 +59,8 @@ describe("Zksbt", function () {
       owner,
       resolve(P0X_DIR, "./wasm/zksbt.wasm"),
       resolve(P0X_DIR, "./zkey/zksbt.zkey"),
+      resolve(P0X_DIR, "./wasm/identity.wasm"),
+      resolve(P0X_DIR, "./zkey/identity.zkey"),
     )
 
     backend = new Backend(
@@ -161,7 +165,7 @@ describe("Zksbt", function () {
     onchain_root = (await pc.getMerkleTreeRoot(pool.id)).toBigInt()
 
     const salt = await backend.alloc_proof_key_salt(category, attribute)
-    const proof = await sdk.generateProof(category, attribute, onchain_root, salt)
+    const proof = await sdk.generateProof(salt)
     
     const proof_key = await backend.generateProofKey(
       sdk.getPublicAddress(),
@@ -204,7 +208,6 @@ if (false) {
     const proof =  await generateProof(
       sdk.identity,
       pool.salt.toBigInt(),
-      group,
       resolve(P0X_DIR, "./wasm/zksbt.wasm"),
       resolve(P0X_DIR, "./zkey/zksbt.zkey")
     )

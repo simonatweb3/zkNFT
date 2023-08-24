@@ -35,6 +35,7 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
   uint constant SBT_GROUP_GUARANTEE = 32;
   bytes constant ZKSBT_CLAIM_MESSAGE = "Sign this meesage to claim zkSBT : ";
   mapping(uint256 => IVerifier) public verifiers;
+  IVerifier public identityVerifier;
 
   uint public latestStartGroupId;
   uint public groupIdOffset;
@@ -57,6 +58,7 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
 
   function initialize(
     IVerifier _verifier,
+    IVerifier _identityVerifier,
     uint groupDepth,
     SbtInterface _iSbt
   ) external initializer {
@@ -66,6 +68,7 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
 
     // zksbt verifier
     verifiers[groupDepth] = _verifier;
+    identityVerifier = _identityVerifier;
 
     // init build-in zksbt pool
     latestStartGroupId = 1;
@@ -182,6 +185,25 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
 
       emit SbtMinted(identity, category, attribute, id);
     }
+  }
+
+  function verifyIdentity(
+    uint identity,
+    uint256 nullifierHash,
+    uint256[8] calldata proof,
+    uint salt
+  ) public {
+    uint256[] memory inputs = new uint256[](3);
+    inputs[0] = identity;
+    inputs[1] = nullifierHash;
+    inputs[2] = salt;
+    bool valid = identityVerifier.verifyProof(
+      [proof[0], proof[1]],
+      [[proof[2], proof[3]], [proof[4], proof[5]]],
+      [proof[6], proof[7]],
+      inputs
+    );
+    require(valid, "proof invalid!");
   }
 
   // verify with given merkle root and given salt

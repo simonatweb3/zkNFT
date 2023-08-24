@@ -10,6 +10,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { verify, verify2, writeToEnv } from "./verify";
 import * as fs from 'fs';
 import { TREE_DEPTH } from "@zksbt/jssdk";
+import { IdentityVerifier__factory } from "../typechain-types/factories/@zksbt/circuits/contracts/identity_verifier.sol";
 const hre = require('hardhat');
 
 export async function deploy(
@@ -43,6 +44,13 @@ export async function deploy(
     console.log("V : ", await v.address)
     await verify(v.address)
 
+    // deploy contract : verifier
+    const ivf : IdentityVerifier__factory = new IdentityVerifier__factory(owner)
+    const iv = await upgrades.deployProxy(ivf);
+    await iv.deployed();
+    console.log("IV : ", await iv.address)
+    await verify(iv.address)
+
     // deploy contract : zkSBT
     const ContractFactory = await ethers.getContractFactory("Zksbt", {
       libraries: {
@@ -55,7 +63,7 @@ export async function deploy(
     //   poolDepth : 10,
     //   _iSbt : Sbt
     // }]
-    const params = [v.address, ZK_GROUP_GURANTEE, Sbt]
+    const params = [v.address, iv.address, ZK_GROUP_GURANTEE, Sbt]
     const pc = await upgrades.deployProxy(ContractFactory, params, { unsafeAllowLinkedLibraries: ['IncrementalBinaryTree'] })
     await pc.deployed()
     //const pc = await ContractFactory.deploy(v.address, 10, Sbt, {gasLimit : 10000000})
@@ -67,6 +75,7 @@ export async function deploy(
     writeToEnv("PT3", pt3.address)
     writeToEnv("IBTree", incrementalBinaryTreeLib.address)
     writeToEnv("VERIFIER", v.address)
+    writeToEnv("IDENTITY_VERIFIER", iv.address)
     writeToEnv("SBT", Sbt)
     writeToEnv("ZKSBT", pc.address)
     return pc

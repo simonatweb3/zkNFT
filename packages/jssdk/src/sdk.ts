@@ -9,6 +9,7 @@ import zksbtJson from "./ABI/Zksbt.json"
 import { generateProof } from "./proof"
 import { FileType, ZKSBT_KEY_SIGN_MESSAGE, TREE_DEPTH, claim_msg, SBT_CATEGORY, POMP_RANGE } from "./common"
 import bigInt from 'big-integer';
+import { generateIdentityProof } from "./identity_proof"
 
 interface eventSbtMinted {
   identity: BigNumber;
@@ -34,6 +35,8 @@ export class ZKSbtSDK implements IZKSbt {
   signer: Signer;
   zksbt_wasm: FileType | undefined;
   zksbt_zkey: FileType | undefined;
+  identity_wasm: FileType | undefined;
+  identity_zkey: FileType | undefined;
   identity: Identity
   // on-chain merkle trees
 
@@ -51,12 +54,16 @@ export class ZKSbtSDK implements IZKSbt {
     zksbtContract: string,
     signer: Signer,
     zksbt_wasm: FileType,
-    zksbt_zkey: FileType
+    zksbt_zkey: FileType,
+    identity_wasm: FileType,
+    identity_zkey: FileType
   ): Promise<ZKSbtSDK> => {
     const identity = ZKSbtSDK.generateIdentity(JSON.stringify(await ZKSbtSDK.generateAccountPrivKeys(signer)))
     const ctx = new ZKSbtSDK(zksbtContract, signer, identity);
     ctx.zksbt_wasm = zksbt_wasm
     ctx.zksbt_zkey = zksbt_zkey
+    ctx.identity_wasm = identity_wasm
+    ctx.identity_zkey = identity_zkey
     return ctx;
   };
   
@@ -107,6 +114,18 @@ export class ZKSbtSDK implements IZKSbt {
   }
 
   public async generateProof(
+    salt : bigint
+  ) : Promise<Proof> {
+    const proof =  await generateIdentityProof(
+      this.identity,
+      salt,
+      this.identity_wasm,
+      this.identity_zkey
+    )
+    return proof.proof
+  }
+
+  public async generateInGroupProof(
     category : bigint,
     attribute : string,
     root : bigint,

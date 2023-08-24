@@ -20,7 +20,7 @@
 
 pragma solidity >=0.7.0 <0.9.0;
 
-contract ZksbtVerifier {
+contract IdentityVerifier {
     // Scalar field size
     uint256 constant r    = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     // Base field size
@@ -37,28 +37,28 @@ contract ZksbtVerifier {
     uint256 constant gammax2 = 10857046999023057135944570762232829481370756359578518086990519993285655852781;
     uint256 constant gammay1 = 4082367875863433681332203403145435568316851327593401208105741076214120093531;
     uint256 constant gammay2 = 8495653923123431417604973247489272438418190587263600148770280649306958101930;
-    uint256 constant deltax1 = 19242022507178515022530449990547182053534042614162704361305650822418053880199;
-    uint256 constant deltax2 = 9754292090309922252658172750377078502266969458363648946359057058596332129695;
-    uint256 constant deltay1 = 21379227192048088730546575844469868255978899411843492600432882574230834178672;
-    uint256 constant deltay2 = 10228968816659207949394728541012714644213165922055811268900222049991135063242;
+    uint256 constant deltax1 = 4608787439814546936709157188192565604523549940521936004689579137832697619250;
+    uint256 constant deltax2 = 3889928504649545781870315042970388023200715539111445860397950057768760255761;
+    uint256 constant deltay1 = 19852758200150458898098435206332278979693198416993555765573831681228238513395;
+    uint256 constant deltay2 = 8956653387662006145380156010672559995540007297675653402941682004749926801086;
 
     
-    uint256 constant IC0x = 18143803865173905597805845545029057581700587248799331831249934806093940964196;
-    uint256 constant IC0y = 19485909459769089318123798620494994193082200070152280803046041445582252036740;
+    uint256 constant IC0x = 3106107338407940906526716807866776149918769870845695837645044169662996492414;
+    uint256 constant IC0y = 9111772716879342048022693105670258819939821334181512589025065857842326617586;
     
-    uint256 constant IC1x = 48461874976923766792167904505448167919389144734618675841132661345259310065;
-    uint256 constant IC1y = 21508179733432428726054552626752383326298782016312551612206911896302012954014;
+    uint256 constant IC1x = 16116751284074532266253759040786962482690786197024757624301436705393806304210;
+    uint256 constant IC1y = 5309286225076956305060834149236634574776569736939618146431627391042951769181;
     
-    uint256 constant IC2x = 1935671099575496853577522995251671004967087316502777505582786571520861636213;
-    uint256 constant IC2y = 19947259729749884729426409084948516933850064264626781344980739156642092086839;
+    uint256 constant IC2x = 16376671817503088568256459781538765365992568211836108141316986585021178986059;
+    uint256 constant IC2y = 9870597273224960312934904877952262176008228183434954187070595588954939157542;
     
-    uint256 constant IC3x = 9784691613030050154649265195192567905078283093309327536909824530303711470938;
-    uint256 constant IC3y = 18123309083298087035462300907187277126441950848699461629690495209441506050227;
+    uint256 constant IC3x = 4414086711398963283698793417677365780277821874058511687210569883731310935644;
+    uint256 constant IC3y = 11366568847321791494913134353563360965091071378623743202182483439208572210440;
     
  
     // Memory data
     uint16 constant pVk = 0;
-    uint16 constant pZksbtPairing = 128;
+    uint16 constant pIdentityPairing = 128;
 
     uint16 constant pLastMem = 896;
 
@@ -97,8 +97,8 @@ contract ZksbtVerifier {
                 }
             }
 
-            function checkZksbtPairing(pA, pB, pC, pubSignals, pMem) -> isOk {
-                let _pZksbtPairing := add(pMem, pZksbtPairing)
+            function checkIdentityPairing(pA, pB, pC, pubSignals, pMem) -> isOk {
+                let _pIdentityPairing := add(pMem, pIdentityPairing)
                 let _pVk := add(pMem, pVk)
 
                 mstore(_pVk, IC0x)
@@ -114,50 +114,50 @@ contract ZksbtVerifier {
                 
 
                 // -A
-                mstore(_pZksbtPairing, calldataload(pA))
-                mstore(add(_pZksbtPairing, 32), mod(sub(q, calldataload(add(pA, 32))), q))
+                mstore(_pIdentityPairing, calldataload(pA))
+                mstore(add(_pIdentityPairing, 32), mod(sub(q, calldataload(add(pA, 32))), q))
 
                 // B
-                mstore(add(_pZksbtPairing, 64), calldataload(pB))
-                mstore(add(_pZksbtPairing, 96), calldataload(add(pB, 32)))
-                mstore(add(_pZksbtPairing, 128), calldataload(add(pB, 64)))
-                mstore(add(_pZksbtPairing, 160), calldataload(add(pB, 96)))
+                mstore(add(_pIdentityPairing, 64), calldataload(pB))
+                mstore(add(_pIdentityPairing, 96), calldataload(add(pB, 32)))
+                mstore(add(_pIdentityPairing, 128), calldataload(add(pB, 64)))
+                mstore(add(_pIdentityPairing, 160), calldataload(add(pB, 96)))
 
                 // alpha1
-                mstore(add(_pZksbtPairing, 192), alphax)
-                mstore(add(_pZksbtPairing, 224), alphay)
+                mstore(add(_pIdentityPairing, 192), alphax)
+                mstore(add(_pIdentityPairing, 224), alphay)
 
                 // beta2
-                mstore(add(_pZksbtPairing, 256), betax1)
-                mstore(add(_pZksbtPairing, 288), betax2)
-                mstore(add(_pZksbtPairing, 320), betay1)
-                mstore(add(_pZksbtPairing, 352), betay2)
+                mstore(add(_pIdentityPairing, 256), betax1)
+                mstore(add(_pIdentityPairing, 288), betax2)
+                mstore(add(_pIdentityPairing, 320), betay1)
+                mstore(add(_pIdentityPairing, 352), betay2)
 
                 // vk_x
-                mstore(add(_pZksbtPairing, 384), mload(add(pMem, pVk)))
-                mstore(add(_pZksbtPairing, 416), mload(add(pMem, add(pVk, 32))))
+                mstore(add(_pIdentityPairing, 384), mload(add(pMem, pVk)))
+                mstore(add(_pIdentityPairing, 416), mload(add(pMem, add(pVk, 32))))
 
 
                 // gamma2
-                mstore(add(_pZksbtPairing, 448), gammax1)
-                mstore(add(_pZksbtPairing, 480), gammax2)
-                mstore(add(_pZksbtPairing, 512), gammay1)
-                mstore(add(_pZksbtPairing, 544), gammay2)
+                mstore(add(_pIdentityPairing, 448), gammax1)
+                mstore(add(_pIdentityPairing, 480), gammax2)
+                mstore(add(_pIdentityPairing, 512), gammay1)
+                mstore(add(_pIdentityPairing, 544), gammay2)
 
                 // C
-                mstore(add(_pZksbtPairing, 576), calldataload(pC))
-                mstore(add(_pZksbtPairing, 608), calldataload(add(pC, 32)))
+                mstore(add(_pIdentityPairing, 576), calldataload(pC))
+                mstore(add(_pIdentityPairing, 608), calldataload(add(pC, 32)))
 
                 // delta2
-                mstore(add(_pZksbtPairing, 640), deltax1)
-                mstore(add(_pZksbtPairing, 672), deltax2)
-                mstore(add(_pZksbtPairing, 704), deltay1)
-                mstore(add(_pZksbtPairing, 736), deltay2)
+                mstore(add(_pIdentityPairing, 640), deltax1)
+                mstore(add(_pIdentityPairing, 672), deltax2)
+                mstore(add(_pIdentityPairing, 704), deltay1)
+                mstore(add(_pIdentityPairing, 736), deltay2)
 
 
-                let success := staticcall(sub(gas(), 2000), 8, _pZksbtPairing, 768, _pZksbtPairing, 0x20)
+                let success := staticcall(sub(gas(), 2000), 8, _pIdentityPairing, 768, _pIdentityPairing, 0x20)
 
-                isOk := and(success, mload(_pZksbtPairing))
+                isOk := and(success, mload(_pIdentityPairing))
             }
 
             let pMem := mload(0x40)
@@ -175,7 +175,7 @@ contract ZksbtVerifier {
             
 
             // Validate all evaluations
-            let isValid := checkZksbtPairing(_pA, _pB, _pC, _pubSignals.offset, pMem)
+            let isValid := checkIdentityPairing(_pA, _pB, _pC, _pubSignals.offset, pMem)
 
             mstore(0, isValid)
              return(0, 0x20)
