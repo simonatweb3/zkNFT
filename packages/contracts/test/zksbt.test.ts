@@ -109,7 +109,7 @@ describe("Zksbt", function () {
 
   let claim_sbt_signature : string
   let category = BigInt(SBT_CATEGORY.pompETH)
-  let attribute = BigInt(POMP_RANGE.RANGE_100)
+  let attribute = POMP_RANGE.RANGE_100
   it("Frontend Claim SBT Signature", async function () {
     claim_sbt_signature = await sdk.claimSbtSignature(category, attribute)
   });
@@ -174,7 +174,7 @@ describe("Zksbt", function () {
   });
 
   let zkbab_category = BigInt(SBT_CATEGORY.ZKBAB)
-  let zkbab_attribute = BigInt(0)
+  let zkbab_attribute = ""
 
   it("add ZKBAB Pool", async function () {
     await (await pc.addSbt(zkbab_category, zkbab_attribute, "ZKBAB")).wait()

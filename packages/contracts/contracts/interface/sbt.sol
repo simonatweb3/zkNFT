@@ -11,7 +11,7 @@ interface SbtInterface {
    *
    * @param identityCommitment //the identity
    * @param asset //asset type this sbt represents
-   * @param range The amount of tokens to transfer.
+   * @param attribute The amount of tokens to transfer.
    * @param sbtId The amount of tokens to transfer.
    *
    * @return success True if the mint process was successful.
@@ -19,7 +19,7 @@ interface SbtInterface {
   function mintWithSbtId(
     uint256 identityCommitment, //record identity commitment of user
     uint256 asset, //mint id
-    uint range,
+    string memory attribute,
     uint256 sbtId //sbt id in the per sbt identity
   ) external returns (bool success);
 }

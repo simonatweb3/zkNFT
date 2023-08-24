@@ -29,7 +29,7 @@ contract Sbt is ERC721URIStorage, Ownable {
   event MintZkSBT(
     uint256 indexed _identityCommitment,
     uint256 indexed category,
-    uint256 attribute,
+    string attribute,
     uint256 indexed tokenId
   );
 
@@ -44,14 +44,14 @@ contract Sbt is ERC721URIStorage, Ownable {
   // metadata of SBT
   struct MetaData {
     uint256 category; // used to distinguish different asset
-    uint256 attribute;
+    string attribute;
   }
 
   // tokenId and MetaData information
   struct TokenIdWithMetadata {
     uint256 tokenId;
     uint256 category; // used to distinguish different asset
-    uint256 attribute;
+    string attribute;
     string uri;
   }
 
@@ -72,7 +72,7 @@ contract Sbt is ERC721URIStorage, Ownable {
   function mintWithSbtId(
     uint256 identityCommitment, //record identity commitment of user
     uint256 category, //asset type, which is enumeration
-    uint256 attribute,
+    string memory attribute,
     uint256 sbtId //sbt id in the per sbt identity
   ) public onlyOperator returns (bool) {
     // check identityCommitment is not 0

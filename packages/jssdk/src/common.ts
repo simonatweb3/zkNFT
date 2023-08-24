@@ -14,16 +14,16 @@ export enum SBT_CATEGORY {    // same as mint ID
 }
 
 export enum POMP_RANGE {
-  RANGE_0 = 0,
-  RANGE_1 = 1,
-  RANGE_10 = 10,
-  RANGE_100 = 100
+  RANGE_0 = "0",
+  RANGE_1 = "1",
+  RANGE_10 = "10",
+  RANGE_100 = "100"
 }
 
 export function claim_msg(
   publicAddress : string,
   category : bigint,
-  attribute : bigint
+  attribute : string
 ) {
   let SBT_CLAIM_MSG = ZKSBT_CLAIM_MSG
   SBT_CLAIM_MSG += " identity " + publicAddress.toString()
@@ -36,7 +36,7 @@ export function claim_msg(
 export function certi_msg(
   publicAddress : string,
   category : bigint,
-  attribute : bigint,
+  attribute : string,
   id : bigint
 ) {
   const SBT_CERTI_MSG = claim_msg(publicAddress, category, attribute) + " sbt id " + id.toString()

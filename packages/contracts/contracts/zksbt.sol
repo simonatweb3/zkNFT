@@ -24,6 +24,8 @@ struct Pool {
   uint depth;
   uint salt;
   uint amount;
+  uint category;
+  string attribute;
 }
 
 contract Zksbt is SemaphoreGroups, Ownable, Initializable {
@@ -39,14 +41,14 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
   SbtInterface public iSbt; // sbt metadata
 
   // sbt category --> sbt attribute --> sbt pools
-  mapping(uint => mapping(uint => Pool)) public pools;
+  mapping(uint => mapping(string => Pool)) public pools;
 
   // sbt category --> sbt attribute --> public address --> sbt_id
-  mapping(uint => mapping(uint =>  mapping(uint => uint))) public sbt_minted;
-  event SbtMinted(uint indexed identity, uint category, uint attribute, uint id);
+  mapping(uint => mapping(string =>  mapping(uint => uint))) public sbt_minted;
+  event SbtMinted(uint indexed identity, uint category, string attribute, uint id);
 
   // sbt category --> sbt attribute --> public address --> group_id
-  mapping(uint => mapping(uint => mapping(uint => uint))) public sbt_group;
+  mapping(uint => mapping(string => mapping(uint => uint))) public sbt_group;
 
   event ZkSbtAddressChange(
     address indexed oldAddress,
@@ -69,12 +71,12 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
     latestStartGroupId = 1;
 
     // TODO : init pompETH-100, pompBNB-100
-    _addSbt(1, 0, "ZKBAB", groupDepth);
-    _addSbt(2, 0, "ZKKYC", groupDepth);
-    _addSbt(12, 0, "pompETH-0", groupDepth);
-    _addSbt(13, 0, "pompBNB-0", groupDepth);
-    _addSbt(12, 100, "pompETH-100", groupDepth);
-    _addSbt(13, 100, "pompBNB-100", groupDepth);
+    _addSbt(1, "", "ZKBAB", groupDepth);
+    _addSbt(2, "", "ZKKYC", groupDepth);
+    _addSbt(12, "", "pompETH-0", groupDepth);
+    _addSbt(13, "", "pompBNB-0", groupDepth);
+    _addSbt(12, "100", "pompETH-100", groupDepth);
+    _addSbt(13, "100", "pompBNB-100", groupDepth);
 
     iSbt = _iSbt;
   }
@@ -82,7 +84,7 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
 
   function _addSbt(
     uint category,
-    uint attribute,
+    string memory attribute,
     string memory name,
     uint groupDepth
   ) internal {
@@ -92,21 +94,23 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
       name: name,
       depth: groupDepth,
       salt:0,
-      amount:0
+      amount:0,
+      category : category,
+      attribute : attribute
     });
     latestStartGroupId += groupIdOffset;
   }
 
   function getSbtPool(
     uint category,
-    uint attribute
+    string memory attribute
   ) public view returns (Pool memory) {
     return pools[category][attribute];
   }
 
   function addSbt(
     uint category,
-    uint attribute,
+    string memory attribute,
     string calldata name
   ) public onlyOwner {
     _addSbt(category, attribute, name, SBT_GROUP_GUARANTEE);
@@ -115,7 +119,7 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
   function sbt_claim_message(
     uint identity,
     uint category,
-    uint attribute,
+    string memory attribute,
     uint id
   ) public pure returns (bytes memory) {
     return bytes.concat(ZKSBT_CLAIM_MESSAGE,
@@ -124,7 +128,7 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
       " sbt category ",
       bytes(Strings.toString(category)),
       " sbt attribute ",
-      bytes(Strings.toString(attribute)),
+      bytes(attribute),
       " sbt id ",
       bytes(Strings.toString(id))
     );
@@ -132,9 +136,9 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
 
   function addMember(
     uint category,
-    uint attribute,
+    string memory attribute,
     uint identity
-  ) private {
+  ) internal {
     Pool storage pool = pools[category][attribute];
     uint startGroupId = pool.id;
     uint curGroup = startGroupId + pool.amount / (1 << pool.depth);
@@ -152,14 +156,14 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
   function mint(
     uint[] calldata identity,
     uint[] calldata category,
-    uint[] calldata attribute,
+    string[] calldata attribute,
     uint[] calldata ids,
     bytes[] calldata certificate_signature
   ) public onlyOwner {
     for (uint256 idx = 0; idx < identity.length; idx++) {
       uint identity = identity[idx];
       uint category = category[idx];
-      uint attribute = attribute[idx];
+      string memory attribute = attribute[idx];
       require(pools[category][attribute].id != 0, "sbt pool not exist!");
       uint id = ids[idx];
       bytes memory message = sbt_claim_message(identity, category, attribute, id);
@@ -183,7 +187,7 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
   // verify with given merkle root and given salt
   function verifyWithRootAndSalt(
     uint category,
-    uint attribute,
+    string memory attribute,
     uint groupId,
     uint merkle_root,
     // uint verify_time,
@@ -213,7 +217,7 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
   // verify with on-chain latest merkle tree and given salt
   function verifyWithSalt(
     uint category,
-    uint attribute,
+    string memory attribute,
     uint groupId,
     uint256 nullifierHash,
     uint256[8] calldata proof,
@@ -227,7 +231,7 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
   function checkGroupIdInSbtPool(
     uint groupId,
     uint category,
-    uint attribute
+    string memory attribute
   ) public {
     uint groupStartId = getSbtPool(category, attribute).id;
     require(groupId >= groupStartId, "id too small!");
@@ -237,14 +241,17 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
   // verify with on-chain latest merkle tree and on-chain salt
   function verify(
     uint category,
-    uint attribute,
+    string memory attribute,
     uint groupId,
     uint256 nullifierHash,
     uint256[8] calldata proof
   ) public {
     checkGroupIdInSbtPool(groupId, category, attribute);
     uint256 merkleTreeRoot = getMerkleTreeRoot(groupId);
-    verifyWithRootAndSalt(category, attribute, groupId, merkleTreeRoot, nullifierHash, proof, getSbtPool(category, attribute).salt);
+    verifyWithRootAndSalt(
+      category, attribute, groupId, merkleTreeRoot, nullifierHash,
+      proof, getSbtPool(category, attribute).salt
+    );
 
     // random change salts[asset][range] to avoid proof conflict
     pools[category][attribute].salt += 1;

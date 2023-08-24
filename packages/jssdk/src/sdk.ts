@@ -13,18 +13,18 @@ import bigInt from 'big-integer';
 interface eventSbtMinted {
   identity: BigNumber;
   category: BigNumber;
-  attribute: BigNumber;
+  attribute: string;
   id: BigNumber;
 }
 
 interface IZKSbt {
   getPublicAddress : () => bigint;
-  claimSbtSignature : (category : bigint, attribute : bigint) => Promise<string>;
-  mint : (category : bigint, attribute : bigint, id : bigint, sig : string) => Promise<void>;
-  generateProof : (category : bigint, attribute : bigint, root : bigint, salt : bigint) => Promise<Proof>;
+  claimSbtSignature : (category : bigint, attribute : string) => Promise<string>;
+  mint : (category : bigint, attribute : string, id : bigint, sig : string) => Promise<void>;
+  generateProof : (category : bigint, attribute : string, root : bigint, salt : bigint) => Promise<Proof>;
   querySbts : () =>  Promise<{
     category : bigint,
-    attribute : bigint,
+    attribute : string,
     id : bigint
   }[]>;
 }
@@ -77,7 +77,7 @@ export class ZKSbtSDK implements IZKSbt {
 
   public async claimSbtSignature(
     category : bigint,
-    attribute : bigint,
+    attribute : string,
   ) : Promise<string> {
     const claim_sbt_signature =  await this.signer.signMessage(
       claim_msg(
@@ -92,7 +92,7 @@ export class ZKSbtSDK implements IZKSbt {
 
   public async mint(
     category : bigint,
-    attribute : bigint,
+    attribute : string,
     id : bigint,
     sig : string
   ) {
@@ -108,7 +108,7 @@ export class ZKSbtSDK implements IZKSbt {
 
   public async generateProof(
     category : bigint,
-    attribute : bigint,
+    attribute : string,
     root : bigint,
     salt : bigint
   ) : Promise<Proof> {
@@ -118,7 +118,7 @@ export class ZKSbtSDK implements IZKSbt {
 
   public async generateSpecialProof(
     category : bigint,
-    attribute : bigint,
+    attribute : string,
     group : Group,
     salt : bigint
   ) : Promise<Proof> {
@@ -136,7 +136,7 @@ export class ZKSbtSDK implements IZKSbt {
   // util match the specific root
   public async reconstructOffchainGroup(
     category : bigint,
-    attribute : bigint,
+    attribute : string,
     root : bigint
   ) {
     const group = new Group(0, TREE_DEPTH, [])
@@ -151,7 +151,7 @@ export class ZKSbtSDK implements IZKSbt {
     for (let idx = 0; idx < events.length; idx++) {
       const e : eventSbtMinted = events[idx].args as unknown as eventSbtMinted;
       console.log("e : ", e)
-      if (e[1].eq(category) && e[2].eq(attribute)) {
+      if (e[1].eq(category) && e[2] === attribute) {
         group.addMember(e[0])
         if(bigInt(group.root.toString()).eq(root)) {
           console.log("same root, merkle tree construct complete!")
@@ -166,7 +166,7 @@ export class ZKSbtSDK implements IZKSbt {
 
   public async verify(
     category : bigint,
-    attribute : bigint,
+    attribute : string,
   ) {
     const pool = await this.pc.getSbtPool(category, attribute)
     const onchain_root = await this.pc.getMerkleTreeRoot(pool.id)
@@ -198,7 +198,7 @@ export class ZKSbtSDK implements IZKSbt {
   // zkSBT List
   public async querySbt(
     category : bigint,
-    attribute : bigint,
+    attribute : string,
   ) {
     // TODO : check SbtMinted event
     const id = await this.pc.sbt_minted(category, attribute, this.identity.getCommitment())
@@ -208,17 +208,17 @@ export class ZKSbtSDK implements IZKSbt {
   public async querySbts() {
     const sbt_list: {
       category : bigint,
-      attribute : bigint,
+      attribute : string,
       id : bigint
     }[] = []
     for(const c in Object.values(SBT_CATEGORY)) {  // TODO : fix
       for(const range in Object.values(POMP_RANGE)) {
         console.log(" c : ", c, "  range : ", range)
-        const sbt_id = await this.querySbt(BigInt(c), BigInt(range))
+        const sbt_id = await this.querySbt(BigInt(c), range)
         if (sbt_id > 0) {
           sbt_list.push({
             category : BigInt(c),
-            attribute : BigInt(range),
+            attribute : range,
             id : sbt_id
           })
         }
