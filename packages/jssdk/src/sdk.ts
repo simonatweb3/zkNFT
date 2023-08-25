@@ -104,7 +104,7 @@ export class ZKSbtSDK implements IZKSbt {
         [attribute],
         [id],
         [sig],
-        {gasLimit : 2000000})
+        {gasLimit : 20000000})
       ).wait()
   }
 
