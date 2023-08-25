@@ -108,6 +108,23 @@ export class ZKSbtSDK implements IZKSbt {
       ).wait()
   }
 
+  public async estimate_mint_gas(
+    category : bigint,
+    attribute : string,
+    id : bigint,
+    sig : string
+  ) {
+      return await this.pc.estimateGas.mint(
+        [this.identity.getCommitment()],
+        [category],
+        [attribute],
+        [id],
+        [sig],
+        {gasLimit : 20000000}
+      )
+  }
+
+
   public async generateProof(
     salt : bigint
   ) : Promise<Proof> {
