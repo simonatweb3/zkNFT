@@ -162,7 +162,7 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
     string[] calldata attribute,
     uint[] calldata ids,
     bytes[] calldata certificate_signature
-  ) public onlyOwner {
+  ) public {
     for (uint256 idx = 0; idx < identity.length; idx++) {
       uint identity = identity[idx];
       uint category = category[idx];
