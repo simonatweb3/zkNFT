@@ -74,7 +74,7 @@ contract Sbt is ERC721URIStorage, Ownable {
     uint256 category, //asset type, which is enumeration
     string memory attribute,
     uint256 sbtId //sbt id in the per sbt identity
-  ) public onlyOperator returns (bool) {
+  ) public returns (bool) {
     // check identityCommitment is not 0
     require(identityCommitment != 0, "invalid identityCommitment");
 
