@@ -6,7 +6,7 @@ import { expect } from "chai";
 
 // browser compatible 
 import { Sbt, Zksbt} from "../typechain-types";
-import { SBT_CATEGORY, generateProof, TREE_DEPTH, unpackProof, ZKSbtSDK, Backend, REVERT_REASON_ALREADY_MINT_SBT, POMP_RANGE } from "@zksbt/jssdk"
+import { SBT_CATEGORY, generateProof, TREE_DEPTH, unpackProof, ZKSbtSDK, Backend, REVERT_REASON_ALREADY_MINT_SBT, POMP_RANGE, certi_msg } from "@zksbt/jssdk"
 import { Group } from "@semaphore-protocol/group"
 import { dnld_aws, P0X_DIR } from "./utility";
 import { resolve } from "path";
@@ -51,6 +51,7 @@ describe("Zksbt", function () {
 
     // approve to operate zkSBT
     await zkSBT.connect(owner).setOperator(pc.address,true)
+
   });
 
   it("Create Pomp SDK", async function () {
@@ -70,6 +71,36 @@ describe("Zksbt", function () {
       resolve(P0X_DIR, "./zkey/zksbt.zkey"),
     );
 
+    const publicAddress = "3486464491358657467212919976910029504285080569025453095670984585935327467779"
+    const category = BigInt(2)
+    const attribute = ""
+    const sbt_id = BigInt("68026653862789119")
+    const msg = certi_msg(
+        //publicAddress,
+        sdk.getPublicAddress().toString(),
+        category,
+        attribute,
+        sbt_id
+      )
+
+    const sig = await owner.signMessage(msg);
+    console.log("msg : ", msg)
+    console.log("certificate_signature : ", sig)
+
+    console.log("mint gas : ", await sdk.estimate_mint_gas(
+      category,
+      attribute,
+      sbt_id,
+      sig
+    ))
+    // await (await pc.mint(
+    //   [publicAddress],
+    //   [category],
+    //   [attribute],
+    //   [sbt_id],
+    //   [sig]
+    // )).wait()
+    //exit(0)
   });
 
   // it("Mint Sanity Test", async function () {
@@ -177,11 +208,11 @@ describe("Zksbt", function () {
     console.log("pomp proof_key : ", proof_key)
   });
 
-  let zkbab_category = BigInt(SBT_CATEGORY.ZKBAB)
+  let zkbab_category = BigInt(888)
   let zkbab_attribute = ""
 
-  it("add ZKBAB Pool", async function () {
-    await (await pc.addSbt(zkbab_category, zkbab_attribute, "ZKBAB")).wait()
+  it("add 888 Pool", async function () {
+    await (await pc.addSbt(zkbab_category, zkbab_attribute, "ZK888")).wait()
   });
 
   it("mint sbt and generate proof key without need generate proof", async function () {
