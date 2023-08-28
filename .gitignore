@@ -3,13 +3,14 @@ node_modules
 .pnp.cjs
 .pnp.loader.mjs
 wasm/
-zkey
+zkey/
 
 .yarn/*
 **/yarn-error.log
-**/zksbt.r1cs
-**/zksbt.sym
-**/zksbt_constraints.json
+**/*.r1cs
+**/*.sym
+**/*_constraints.json
+**/*_js/
 
 !.yarn/patches
 !.yarn/plugins

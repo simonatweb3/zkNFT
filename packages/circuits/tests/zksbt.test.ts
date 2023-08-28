@@ -5,12 +5,13 @@ import {BigNumberish, Proof, SnarkJSProof } from "@semaphore-protocol/proof"
 // import packProof from "@semaphore-protocol/proof/src/packProof"
 // import unpackProof from "@semaphore-protocol/proof/src/unpackProof"
 import { BytesLike, Hexable } from "@ethersproject/bytes"
+import { poseidon3 } from "poseidon-lite/poseidon3"
 import { BigNumber } from "@ethersproject/bignumber"
 import { expect } from "chai";
 import * as fs from "fs";
 import hash from "./hash"
 const snarkjs = require('snarkjs');
-const TREE_DEPTH = 32
+const TREE_DEPTH = 16
 
 export function get_circuit_wasm_file(
     CUR_CIRCUIT : string
@@ -69,14 +70,21 @@ function unpackProof(proof: Proof): SnarkJSProof {
 export default async function generateProof(
     identity : Identity,
     externalNullifier: BytesLike | Hexable | number | bigint,
-    //zksbt : bigint,
+    zksbt : bigint,
+    verifyTimestamp : bigint,
+    beginTimestamp : bigint,
+    endTimestamp : bigint,
     group: Group,
     wasmFile : string,
     zkeyFile : string
 ): Promise<FullProof> {
     console.log(new Date().toUTCString() + " generateProof for wasm : ", wasmFile, ", zkey : ", zkeyFile)
 
-    const zksbt_commitment = identity.getCommitment()
+    const zksbt_commitment = poseidon3([
+            identity.getCommitment(),
+            zksbt,
+            verifyTimestamp
+        ])
     const merkleProof: MerkleProof = group.generateMerkleProof(group.indexOf(zksbt_commitment))
 
     const { proof, publicSignals } = await snarkjs.groth16.fullProve(
@@ -85,8 +93,11 @@ export default async function generateProof(
             identityNullifier: identity.getNullifier(),
             treePathIndices: merkleProof.pathIndices,
             treeSiblings: merkleProof.siblings,
-            externalNullifier: hash(externalNullifier)
-            //zksbt : zksbt
+            externalNullifier: hash(externalNullifier),
+            zksbt : zksbt,
+            verifyTimestamp : verifyTimestamp,
+            beginTimestamp : beginTimestamp,
+            endTimestamp : endTimestamp
         },
         wasmFile,
         zkeyFile
@@ -97,7 +108,9 @@ export default async function generateProof(
         publicSignals: {
             merkleRoot: publicSignals[0],
             nullifierHash: publicSignals[1],
-            externalNullifier: BigNumber.from(externalNullifier).toString()
+            externalNullifier: BigNumber.from(externalNullifier).toString(),
+            beginTimestamp : beginTimestamp,
+            endTimestamp : endTimestamp
         }
     }
 
@@ -112,14 +125,26 @@ async function test() {
     )
 
     // 2/3. add identity to group
-    const group = new Group(123, TREE_DEPTH, [identity.getCommitment()])
+    const verifyTimestamp = BigInt(1)
+    const beginTimestamp = BigInt(0)
+    const endTimestamp = BigInt(2)
+    const zksbt = BigInt(1)
+
+    const group = new Group(123, TREE_DEPTH, [
+        poseidon3([
+            identity.getCommitment(),
+            zksbt,
+            verifyTimestamp
+        ])
+    ])
 
     // 3/3. generate witness, prove, verify
     const externalNullifier = "1234"
     const proof =  await generateProof(
         identity,
         externalNullifier,
-        //zksbt,
+        zksbt,
+        verifyTimestamp, beginTimestamp, endTimestamp,
         group,
         get_circuit_wasm_file("zksbt"),
         get_circuit_zkey_file("zksbt").growth16
@@ -136,7 +161,10 @@ async function test() {
         [
             proof.publicSignals.merkleRoot,
             proof.publicSignals.nullifierHash,
-            hash(externalNullifier)
+            hash(externalNullifier),
+            beginTimestamp,
+            endTimestamp
+
         ],
         unpackProof(proof.proof)
     )).eq(true)

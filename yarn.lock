@@ -3347,7 +3347,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@zksbt/circuits@0.0.1, @zksbt/circuits@workspace:packages/circuits":
+"@zksbt/circuits@0.0.1, @zksbt/circuits@workspace:^, @zksbt/circuits@workspace:packages/circuits":
   version: 0.0.0-use.local
   resolution: "@zksbt/circuits@workspace:packages/circuits"
   dependencies:
@@ -13758,6 +13758,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"poseidon-lite@npm:^0.2.0":
+  version: 0.2.0
+  resolution: "poseidon-lite@npm:0.2.0"
+  checksum: c47c6fd0a29a78ca1f7cf6ccb8b0c4f4e72930d944e63425e36f60c15d37fb0aeca30b8a22a30640ed68d631142282c0b8308da83b1a2b2bb92b87f5a2432c93
+  languageName: node
+  linkType: hard
+
 "posix-character-classes@npm:^0.1.0":
   version: 0.1.1
   resolution: "posix-character-classes@npm:0.1.1"
@@ -18468,6 +18475,7 @@ __metadata:
   dependencies:
     "@typescript-eslint/eslint-plugin": ^5.50.0
     "@typescript-eslint/parser": ^5.60.1
+    "@zksbt/circuits": "workspace:^"
     eslint: ^8.0.1
     eslint-config-standard-with-typescript: latest
     eslint-plugin-import: ^2.25.2
@@ -18475,6 +18483,7 @@ __metadata:
     eslint-plugin-promise: ^6.0.0
     husky: ^8.0.3
     lint-staged: ^13.2.3
+    poseidon-lite: ^0.2.0
     prettier: 2.8.8
     typescript: 4.9.3
   languageName: unknown
