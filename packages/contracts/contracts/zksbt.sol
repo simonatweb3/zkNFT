@@ -92,6 +92,7 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
     string memory name,
     uint groupDepth
   ) internal {
+    require(pools[category][attribute].id == 0, "sbt pool already exist!");
     _createGroup(latestStartGroupId, groupDepth);
     pools[category][attribute] = Pool({
       id: latestStartGroupId,
