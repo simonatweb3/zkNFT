@@ -127,10 +127,10 @@ describe("Zksbt", function () {
   let pool : PoolStruct
   let onchain_root : bigint
   it("Get zkSBT Proof Key", async function () {
-    pool = await pc.pools(category, attribute)
+    pool = await pc.pools(category)
     onchain_root = (await pc.getMerkleTreeRoot(pool.id)).toBigInt()
 
-    const salt = await backend.alloc_proof_key_salt(category, attribute)
+    const salt = await backend.alloc_proof_key_salt(category)
     const proof = await sdk.generateProof(salt)
     
     const proof_key = await backend.generateProofKey(
@@ -148,7 +148,7 @@ describe("Zksbt", function () {
   let zkbab_attribute = ""
 
   it("add 888 Pool", async function () {
-    await (await pc.addSbt(zkbab_category, zkbab_attribute, "ZK888")).wait()
+    await (await pc.addSbt(zkbab_category, "ZK888")).wait()
   });
 
 if (false) {

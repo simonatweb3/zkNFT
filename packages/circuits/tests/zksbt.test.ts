@@ -5,13 +5,28 @@ import {BigNumberish, Proof, SnarkJSProof } from "@semaphore-protocol/proof"
 // import packProof from "@semaphore-protocol/proof/src/packProof"
 // import unpackProof from "@semaphore-protocol/proof/src/unpackProof"
 import { BytesLike, Hexable } from "@ethersproject/bytes"
-import { poseidon3 } from "poseidon-lite/poseidon3"
+import { poseidon2 } from "poseidon-lite/poseidon2"
 import { BigNumber } from "@ethersproject/bignumber"
 import { expect } from "chai";
 import * as fs from "fs";
 import hash from "./hash"
 const snarkjs = require('snarkjs');
+import { ethers } from "ethers";
 const TREE_DEPTH = 16
+
+import log4js from "log4js"
+export const logger = log4js.getLogger();
+logger.level = "debug";
+const { buildBabyjub } = require('circomlibjs');
+
+export async function attribute2jub(
+    attribute : string
+) {
+    const jub = await buildBabyjub()
+    //const JUB_CURVE_R = jub.p
+    const JUB_CURVE_R = BigInt(21888242871839275222246405745257275088548364400416034343698204186575808495617)
+    return BigInt(ethers.utils.solidityKeccak256(['string'], [attribute])) % JUB_CURVE_R
+}
 
 export function get_circuit_wasm_file(
     CUR_CIRCUIT : string
@@ -71,6 +86,7 @@ export default async function generateProof(
     identity : Identity,
     externalNullifier: BytesLike | Hexable | number | bigint,
     zksbt : bigint,
+    attribute : string,
     verifyTimestamp : bigint,
     beginTimestamp : bigint,
     endTimestamp : bigint,
@@ -80,11 +96,19 @@ export default async function generateProof(
 ): Promise<FullProof> {
     console.log(new Date().toUTCString() + " generateProof for wasm : ", wasmFile, ", zkey : ", zkeyFile)
 
-    const zksbt_commitment = poseidon3([
+    let zksbt_commitment = poseidon2([
             identity.getCommitment(),
-            zksbt,
+            zksbt
+        ])
+    zksbt_commitment = poseidon2([
+            zksbt_commitment,
             verifyTimestamp
         ])
+    zksbt_commitment = poseidon2([
+            zksbt_commitment,
+            await attribute2jub(attribute)
+        ])
+    
     const merkleProof: MerkleProof = group.generateMerkleProof(group.indexOf(zksbt_commitment))
 
     const { proof, publicSignals } = await snarkjs.groth16.fullProve(
@@ -94,6 +118,7 @@ export default async function generateProof(
             treePathIndices: merkleProof.pathIndices,
             treeSiblings: merkleProof.siblings,
             externalNullifier: hash(externalNullifier),
+            attribute : await attribute2jub(attribute),
             zksbt : zksbt,
             verifyTimestamp : verifyTimestamp,
             beginTimestamp : beginTimestamp,
@@ -103,12 +128,15 @@ export default async function generateProof(
         zkeyFile
     )
 
+    console.log("publicSignals : ", publicSignals)
+
     const fullProof = {
         proof : packProof(proof),
         publicSignals: {
             merkleRoot: publicSignals[0],
             nullifierHash: publicSignals[1],
             externalNullifier: BigNumber.from(externalNullifier).toString(),
+            attribute : await attribute2jub(attribute),
             beginTimestamp : beginTimestamp,
             endTimestamp : endTimestamp
         }
@@ -129,13 +157,23 @@ async function test() {
     const beginTimestamp = BigInt(0)
     const endTimestamp = BigInt(2)
     const zksbt = BigInt(1)
+    const attribute = "0.1"
 
-    const group = new Group(123, TREE_DEPTH, [
-        poseidon3([
-            identity.getCommitment(),
-            zksbt,
+    let zksbt_commitment = poseidon2([
+        identity.getCommitment(),
+        zksbt
+    ])
+    zksbt_commitment = poseidon2([
+            zksbt_commitment,
             verifyTimestamp
         ])
+    zksbt_commitment = poseidon2([
+            zksbt_commitment,
+            await attribute2jub(attribute)
+        ])
+
+    const group = new Group(123, TREE_DEPTH, [
+        zksbt_commitment
     ])
 
     // 3/3. generate witness, prove, verify
@@ -144,6 +182,7 @@ async function test() {
         identity,
         externalNullifier,
         zksbt,
+        attribute,
         verifyTimestamp, beginTimestamp, endTimestamp,
         group,
         get_circuit_wasm_file("zksbt"),
@@ -156,17 +195,21 @@ async function test() {
         data : new Uint8Array(Buffer.from(fs.readFileSync(get_circuit_zkey_file("zksbt").growth16)))
     }
     const vKey = await snarkjs.zKey.exportVerificationKey(zkey_final);
+    const publicSignals = [
+        proof.publicSignals.merkleRoot,
+        proof.publicSignals.nullifierHash,
+        hash(externalNullifier),
+        await attribute2jub(attribute),
+        beginTimestamp,
+        endTimestamp
+    ]
+
+    console.log("verify publicSignals : ", publicSignals)
     expect(await snarkjs.groth16.verify(
         vKey,
-        [
-            proof.publicSignals.merkleRoot,
-            proof.publicSignals.nullifierHash,
-            hash(externalNullifier),
-            beginTimestamp,
-            endTimestamp
-
-        ],
-        unpackProof(proof.proof)
+        publicSignals,
+        unpackProof(proof.proof),
+        logger
     )).eq(true)
 
     //let solidityGroupProof: SolidityProof = packToSolidityProof(groupProof.proof)

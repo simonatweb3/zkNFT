@@ -123,11 +123,10 @@ export class Backend implements IBackend {
   }
 
   public async alloc_proof_key_salt(
-    category : bigint,
-    attribute : string,
+    category : bigint
   ) {
     // TODO
-    const pool = await this.pc.pools(category, attribute)
+    const pool = await this.pc.pools(category)
     return pool.salt.toBigInt()
   }
 

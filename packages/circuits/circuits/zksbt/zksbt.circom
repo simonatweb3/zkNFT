@@ -56,6 +56,7 @@ template Zksbt(nLevels) {
 
     signal input zksbt;             // private
     signal input verifyTimestamp;   // private
+    signal input attribute;         // public
     signal input beginTimestamp;    // public
     signal input endTimestamp;      // public
 
@@ -82,19 +83,29 @@ template Zksbt(nLevels) {
     component calculateIdentityCommitment = CalculateIdentityCommitment();
     calculateIdentityCommitment.secret <== secret;
 
-    // zksbt/verifyTimestamp bind identity
-    component poseidon = Poseidon(3);
-    poseidon.inputs[0] <== calculateIdentityCommitment.out;
-    poseidon.inputs[1] <== zksbt;
-    poseidon.inputs[2] <== verifyTimestamp;
+    // zksbt/verifyTimestamp/attribute bind identity
+    component poseidon[3];
+    poseidon[0] = Poseidon(2);
+    poseidon[0].inputs[0] <== calculateIdentityCommitment.out;
+    poseidon[0].inputs[1] <== zksbt;
+
+    poseidon[1] = Poseidon(2);
+    poseidon[1].inputs[0] <== poseidon[0].out;
+    poseidon[1].inputs[1] <== verifyTimestamp;
+
+    poseidon[2] = Poseidon(2);
+    poseidon[2].inputs[0] <== poseidon[1].out;
+    poseidon[2].inputs[1] <== attribute;
+    // log(88888888);
+    // log(attribute);
+    //log(Poseidon[2].out);
 
     component calculateNullifierHash = CalculateNullifierHash();
     calculateNullifierHash.externalNullifier <== externalNullifier;
     calculateNullifierHash.identityNullifier <== identityNullifier;
 
     component inclusionProof = MerkleTreeInclusionProof(nLevels);
-    inclusionProof.leaf <== poseidon.out; // using zksbt-bind identity.
-    //inclusionProof.leaf <== calculateIdentityCommitment.out;
+    inclusionProof.leaf <== poseidon[2].out;
 
     for (var i = 0; i < nLevels; i++) {
         inclusionProof.siblings[i] <== treeSiblings[i];
@@ -105,4 +116,4 @@ template Zksbt(nLevels) {
     nullifierHash <== calculateNullifierHash.out;
 }
 
-component main {public [externalNullifier, beginTimestamp, endTimestamp]} = Zksbt(16);
+component main {public [externalNullifier, attribute, beginTimestamp, endTimestamp]} = Zksbt(16);
