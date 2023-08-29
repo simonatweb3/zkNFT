@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./interface/sbt.sol";
 import "./upgradeableLib/Ownable.sol";
+import {PoseidonT3} from  "@zk-kit/incremental-merkle-tree.sol/Hashes.sol";
 
 interface IVerifier {
   function verifyProof(
@@ -18,38 +19,41 @@ interface IVerifier {
 }
 
 struct Pool {
-  // reserve group[id ~ id + offset], sbt capacity 2<<128
-  uint id;
+  uint id;  // reserve group[id ~ id + offset], sbt capacity 2<<128
   string name;
   uint depth;
-  uint salt;
   uint amount;
   uint category;
+  uint salt;
+  string attribute;   // TODO : remove
+}
+
+struct SbtInfo {
+  uint category;
   string attribute;
+  uint publicAddress;
+  uint id;
+  uint verifyTimestamp;
 }
 
 contract Zksbt is SemaphoreGroups, Ownable, Initializable {
-
   bytes constant public VERSION = "0.5";
   uint constant SBT_CAPACITY = 128;
-  uint constant SBT_GROUP_GUARANTEE = 32;
+  uint constant SBT_GROUP_GUARANTEE = 16;
+  uint constant GROUP_ID_OFFSET = 1 << (SBT_CAPACITY - SBT_GROUP_GUARANTEE);
   bytes constant ZKSBT_CLAIM_MESSAGE = "Sign this meesage to claim zkSBT : ";
-  mapping(uint256 => IVerifier) public verifiers;
+  IVerifier public verifier;
   IVerifier public identityVerifier;
 
   uint public latestStartGroupId;
-  uint public groupIdOffset;
-  SbtInterface public iSbt; // sbt metadata
+  SbtInterface public iSbt; // sbt/nft standard style
 
   // sbt category --> sbt attribute --> sbt pools
   mapping(uint => mapping(string => Pool)) public pools;
 
-  // sbt category --> sbt attribute --> public address --> sbt_id
-  mapping(uint => mapping(string =>  mapping(uint => uint))) public sbt_minted;
-  event SbtMinted(uint indexed identity, uint category, string attribute, uint id);
-
-  // sbt category --> sbt attribute --> public address --> group_id
-  mapping(uint => mapping(string => mapping(uint => uint))) public sbt_group;
+  mapping(uint => SbtInfo) public sbt_minted; // sbt_id --> SbtInfo
+  mapping(uint => uint) public sbt_group;     // sbt_id --> group id
+  event SbtMinted(uint indexed publicAddress, uint category, string attribute, uint id, uint verifyTimestamp);
 
   event ZkSbtAddressChange(
     address indexed oldAddress,
@@ -59,58 +63,36 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
   function initialize(
     IVerifier _verifier,
     IVerifier _identityVerifier,
-    uint groupDepth,
     SbtInterface _iSbt
   ) external initializer {
     _initOwnable();
-
-    groupIdOffset = 1 << (SBT_CAPACITY - groupDepth);
-
     // zksbt verifier
-    verifiers[groupDepth] = _verifier;
+    verifier = _verifier;
     identityVerifier = _identityVerifier;
 
     // init build-in zksbt pool
     latestStartGroupId = 1;
 
-    // TODO : init pompETH-100, pompBNB-100
-    _addSbt(1, "", "ZKBAB", groupDepth);
-    _addSbt(2, "", "ZKKYC", groupDepth);
-    _addSbt(100, "", "ZKMAIL", groupDepth);
-    _addSbt(12, "", "pompETH-0", groupDepth);
-    _addSbt(13, "", "pompBNB-0", groupDepth);
-    _addSbt(12, "100", "pompETH-100", groupDepth);
-    _addSbt(13, "100", "pompBNB-100", groupDepth);
-
     iSbt = _iSbt;
   }
-
 
   function _addSbt(
     uint category,
     string memory attribute,
-    string memory name,
-    uint groupDepth
+    string memory name
   ) internal {
     require(pools[category][attribute].id == 0, "sbt pool already exist!");
-    _createGroup(latestStartGroupId, groupDepth);
+    _createGroup(latestStartGroupId, SBT_GROUP_GUARANTEE);
     pools[category][attribute] = Pool({
       id: latestStartGroupId,
       name: name,
-      depth: groupDepth,
-      salt:0,
+      depth : SBT_GROUP_GUARANTEE,
       amount:0,
+      salt : 0,
       category : category,
       attribute : attribute
     });
-    latestStartGroupId += groupIdOffset;
-  }
-
-  function getSbtPool(
-    uint category,
-    string memory attribute
-  ) public view returns (Pool memory) {
-    return pools[category][attribute];
+    latestStartGroupId += GROUP_ID_OFFSET;
   }
 
   function addSbt(
@@ -118,32 +100,40 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
     string memory attribute,
     string calldata name
   ) public onlyOwner {
-    _addSbt(category, attribute, name, SBT_GROUP_GUARANTEE);
+    _addSbt(category, attribute, name);
   }
 
   function sbt_claim_message(
-    uint identity,
+    uint publicAddress,
     uint category,
     string memory attribute,
-    uint id
+    uint id,
+    uint verifyTimestamp
   ) public pure returns (bytes memory) {
     return bytes.concat(ZKSBT_CLAIM_MESSAGE,
-      " identity ",
-      bytes(Strings.toString(identity)),
+      " public address ",
+      bytes(Strings.toString(publicAddress)),
       " sbt category ",
       bytes(Strings.toString(category)),
       " sbt attribute ",
       bytes(attribute),
       " sbt id ",
-      bytes(Strings.toString(id))
+      bytes(Strings.toString(id)),
+      " verify timestamp ",
+      bytes(Strings.toString(verifyTimestamp))
     );
   }
 
   function addMember(
     uint category,
     string memory attribute,
-    uint identity
-  ) internal {
+    uint publicAddress,
+    uint sbtId,
+    uint verifyTimestamp
+  ) internal returns (uint) {
+    if (pools[category][attribute].id == 0) {
+      _addSbt(category, attribute, "");
+    }
     Pool storage pool = pools[category][attribute];
     uint startGroupId = pool.id;
     uint curGroup = startGroupId + pool.amount / (1 << pool.depth);
@@ -151,41 +141,51 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
       // new group
       _createGroup(curGroup , pool.depth);
     }
-    _addMember(curGroup, identity);
-    sbt_group[category][attribute][identity] = curGroup;
+
+    uint zksbt_commitment = PoseidonT3.poseidon([publicAddress, sbtId]);
+    zksbt_commitment = PoseidonT3.poseidon([zksbt_commitment, sbtId]);
+    _addMember(curGroup, zksbt_commitment);
 
     pool.amount++;
+    return curGroup;
   }
 
   // batch mint
   function mint(
-    uint[] calldata identity,
-    uint[] calldata category,
-    string[] calldata attribute,
-    uint[] calldata ids,
-    bytes[] calldata certificate_signature
+    SbtInfo[] calldata sbtInfo,
+    bytes[] calldata signature
   ) public {
-    for (uint256 idx = 0; idx < identity.length; idx++) {
-      uint identity = identity[idx];
-      uint category = category[idx];
-      string memory attribute = attribute[idx];
-      require(pools[category][attribute].id != 0, "sbt pool not exist!");
-      uint id = ids[idx];
-      bytes memory message = sbt_claim_message(identity, category, attribute, id);
+    require(sbtInfo.length == signature.length, "sbt/sig len not match!");
+    for (uint256 idx = 0; idx < sbtInfo.length; idx++) {
+      uint category = sbtInfo[idx].category;
+      string memory attribute = sbtInfo[idx].attribute;
+      //require(pools[category][attribute].id != 0, "sbt pool not exist!");
+      
+      uint publicAddress = sbtInfo[idx].publicAddress;
+      uint id = sbtInfo[idx].id;
+      require(sbt_minted[id].verifyTimestamp == 0, "same zksbt exist!");
+  
+      uint verifyTimestamp = sbtInfo[idx].verifyTimestamp;
+      bytes memory message = sbt_claim_message(
+        publicAddress, category, attribute, id, verifyTimestamp
+      );
       bytes32 msgHash = ECDSA.toEthSignedMessageHash(message);
-      address signer = ECDSA.recover(msgHash, certificate_signature[idx]);
+      address signer = ECDSA.recover(msgHash, signature[idx]);
       require(signer == owner(), "Invalid Certificate Signature!");
 
-      // TODO : close for test easy, should enable
-      // require(sbt_minted[category][attribute][identity] == 0, "zksbt exist!");
+      sbt_minted[id] = SbtInfo({
+        category : category,
+        attribute : attribute,
+        id: id,
+        publicAddress : publicAddress,
+        verifyTimestamp : verifyTimestamp
+      });
+      sbt_group[id] = addMember(category, attribute, publicAddress, id, verifyTimestamp);
 
-      addMember(category, attribute, identity);
-      sbt_minted[category][attribute][identity] = id;
-
-      bool success = iSbt.mintWithSbtId(identity, category, attribute, id);
+      bool success = iSbt.mintWithSbtId(publicAddress, category, attribute, id);
       require(success, "failed to mint zkSBT");
 
-      emit SbtMinted(identity, category, attribute, id);
+      emit SbtMinted(publicAddress, category, attribute, id, verifyTimestamp);
     }
   }
 
@@ -214,13 +214,12 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
     string memory attribute,
     uint groupId,
     uint merkle_root,
-    // uint verify_time,
+    // uint begin_verify_time,
+    // uint end_verify_time,
     uint256 nullifierHash,
     uint256[8] calldata proof,
     uint salt
   ) public {
-    // check merkle_root valid, and match verify_time
-
     // now using the latest root
     checkGroupIdInSbtPool(groupId, category, attribute);
     uint256 merkleTreeDepth = getMerkleTreeDepth(groupId);
@@ -228,7 +227,7 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
     inputs[0] = merkle_root;
     inputs[1] = nullifierHash;
     inputs[2] = salt;
-    bool valid = verifiers[merkleTreeDepth].verifyProof(
+    bool valid = verifier.verifyProof(
       [proof[0], proof[1]],
       [[proof[2], proof[3]], [proof[4], proof[5]]],
       [proof[6], proof[7]],
@@ -257,9 +256,9 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
     uint category,
     string memory attribute
   ) public {
-    uint groupStartId = getSbtPool(category, attribute).id;
+    uint groupStartId = pools[category][attribute].id;
     require(groupId >= groupStartId, "id too small!");
-    require(groupId < groupStartId + groupIdOffset, "id too big!");
+    require(groupId < groupStartId + GROUP_ID_OFFSET, "id too big!");
   }
 
   // verify with on-chain latest merkle tree and on-chain salt
@@ -274,7 +273,7 @@ contract Zksbt is SemaphoreGroups, Ownable, Initializable {
     uint256 merkleTreeRoot = getMerkleTreeRoot(groupId);
     verifyWithRootAndSalt(
       category, attribute, groupId, merkleTreeRoot, nullifierHash,
-      proof, getSbtPool(category, attribute).salt
+      proof, pools[category][attribute].salt
     );
 
     // random change salts[asset][range] to avoid proof conflict

@@ -54,16 +54,13 @@ export async function deploy(
     // deploy contract : zkSBT
     const ContractFactory = await ethers.getContractFactory("Zksbt", {
       libraries: {
+        PoseidonT3: await pt3.address,
         IncrementalBinaryTree: await incrementalBinaryTreeLib.address
       }
     })
 
-    // const params = [{
-    //   _verifier : v.address,
-    //   poolDepth : 10,
-    //   _iSbt : Sbt
-    // }]
-    const params = [v.address, iv.address, ZK_GROUP_GURANTEE, Sbt]
+    //const params = [v.address, iv.address, ZK_GROUP_GURANTEE, Sbt]
+    const params = [v.address, iv.address, Sbt]
     const pc = await upgrades.deployProxy(ContractFactory, params, { unsafeAllowLinkedLibraries: ['IncrementalBinaryTree'] })
     await pc.deployed()
     //const pc = await ContractFactory.deploy(v.address, 10, Sbt, {gasLimit : 10000000})

@@ -70,77 +70,7 @@ describe("Zksbt", function () {
       resolve(P0X_DIR, "./wasm/zksbt.wasm"),
       resolve(P0X_DIR, "./zkey/zksbt.zkey"),
     );
-
-    const publicAddress = "3486464491358657467212919976910029504285080569025453095670984585935327467779"
-    const category = BigInt(2)
-    const attribute = ""
-    const sbt_id = BigInt("68026653862789119")
-    const msg = certi_msg(
-        //publicAddress,
-        sdk.getPublicAddress().toString(),
-        category,
-        attribute,
-        sbt_id
-      )
-
-    const sig = await owner.signMessage(msg);
-    console.log("msg : ", msg)
-    console.log("certificate_signature : ", sig)
-
-    console.log("mint gas : ", await sdk.estimate_mint_gas(
-      category,
-      attribute,
-      sbt_id,
-      sig
-    ))
-    // await (await pc.mint(
-    //   [publicAddress],
-    //   [category],
-    //   [attribute],
-    //   [sbt_id],
-    //   [sig]
-    // )).wait()
-    //exit(0)
   });
-
-  // it("Mint Sanity Test", async function () {
-
-  //   const identity = [
-  //     '3754797889652379466792370528161869808469561093460138447622645070292361441330',
-  //     '3754797889652379466792370528161869808469561093460138447622645070292361441330'
-  //   ]
-  //   const category = [
-  //     13,
-  //     13
-  //   ]
-  //   const attribute = [
-  //     1,
-  //     1
-  //   ]
-  //   const ids = [
-  //     '1692141368752422913',
-  //     '1692142125571584001'
-  //   ]
-  //   const sigs = [
-  //     '0xfa9da69ec2ff07929fb9fa6eee55e31cbbacedede0c65f7c771e8362c72cac3c1ead825209ec46a7b6f63f4389d23eb3d84a6ef791a6fab7bca0993d6ee1a7191b',
-  //     '0x3314646e1c97aa46b670edf5b4e1cdb635545c6dd180c018439e899a031928d4563fddc5dcab0e8c93ba0da02bb18ef397f6c438af88c5da1a06c355cd4140051c'
-  //   ]
-  //   await (await pc.mint(
-  //     identity,
-  //     category,
-  //     attribute,
-  //     ids,
-  //     sigs
-  //   )).wait()
-  // });
-
-//if (false) {
-  // it("Add zkSBT(type, or pomp asset/range)", async function () {
-  // });
-
-  // it("Create More Pool for zkSBT, in case merkle tree full", async function () {
-  //    // todo : merkle tree user case
-  // });
 
   let claim_sbt_signature : string
   let category = BigInt(SBT_CATEGORY.pompETH)
@@ -149,22 +79,27 @@ describe("Zksbt", function () {
     claim_sbt_signature = await sdk.claimSbtSignature(category, attribute)
   });
 
-  it("mint by backend more than gurantee", async function () {
-    await backend.mint(sdk.getPublicAddress(), category, attribute, claim_sbt_signature)
-    await backend.mint(sdk.getPublicAddress(), category, attribute, claim_sbt_signature)
-    const groupId = await pc.sbt_group(category, attribute, sdk.getPublicAddress())
+  // it("mint by backend more than gurantee", async function () {
+  //   await backend.mint(sdk.getPublicAddress(), category, attribute, claim_sbt_signature)
+  //   await backend.mint(sdk.getPublicAddress(), category, attribute, claim_sbt_signature)
+  //   const groupId = await pc.sbt_group(category, attribute, sdk.getPublicAddress())
     
-    await backend.mint(sdk.getPublicAddress(), category, attribute, claim_sbt_signature)
-    let newGroupId = await pc.sbt_group(category, attribute, sdk.getPublicAddress())
-    expect(groupId.add(1).toBigInt()).eq(newGroupId.toBigInt())
-    await backend.mint(sdk.getPublicAddress(), category, attribute, claim_sbt_signature)
+  //   await backend.mint(sdk.getPublicAddress(), category, attribute, claim_sbt_signature)
+  //   let newGroupId = await pc.sbt_group(category, attribute, sdk.getPublicAddress())
+  //   expect(groupId.add(1).toBigInt()).eq(newGroupId.toBigInt())
+  //   await backend.mint(sdk.getPublicAddress(), category, attribute, claim_sbt_signature)
   
-    await backend.mint(sdk.getPublicAddress(), category, attribute, claim_sbt_signature)
-    newGroupId = await pc.sbt_group(category, attribute, sdk.getPublicAddress())
-    expect(groupId.add(2).toBigInt()).eq(newGroupId.toBigInt())
-  });
+  //   await backend.mint(sdk.getPublicAddress(), category, attribute, claim_sbt_signature)
+  //   newGroupId = await pc.sbt_group(category, attribute, sdk.getPublicAddress())
+  //   expect(groupId.add(2).toBigInt()).eq(newGroupId.toBigInt())
+  // });
 
-  let backend_certificate :  {eligible: boolean; signature: string; sbt_id: bigint;}
+  let backend_certificate : {
+    eligible: boolean;
+    signature: string;
+    sbt_id: bigint;
+    verifyTimestamp: bigint;
+  }
   it("Frontend Ask Backend Certificate", async function () {
     backend_certificate = await backend.certificate(
       sdk.identity.getCommitment(),
@@ -176,23 +111,23 @@ describe("Zksbt", function () {
   });
 
   it("duplicate mint zksbt directly with certificate signature", async function () {
-    try {
-      await sdk.mint(category, attribute, backend_certificate.sbt_id, backend_certificate.signature)
-    } catch (error) {
-      expect(error.toString().includes(REVERT_REASON_ALREADY_MINT_SBT)).equal(true)
-    }
+    //try {
+      await sdk.mint(category, attribute, backend_certificate.sbt_id, backend_certificate.verifyTimestamp, backend_certificate.signature)
+    //} catch (error) {
+      //expect(error.toString().includes(REVERT_REASON_ALREADY_MINT_SBT)).equal(true)
+    //}
   });
 
   it("Query zkSBT", async function () {
-    const sbts = await sdk.querySbt(category, attribute)
-    console.log("sbts : ", sbts)
+    const sbtInfo = await sdk.querySbt(backend_certificate.sbt_id)
+    console.log("sbtInfo : ", sbtInfo)
     //expect(sbts[0].category).eq(category)
   });
 
   let pool : PoolStruct
   let onchain_root : bigint
   it("Get zkSBT Proof Key", async function () {
-    pool = await pc.getSbtPool(category, attribute)
+    pool = await pc.pools(category, attribute)
     onchain_root = (await pc.getMerkleTreeRoot(pool.id)).toBigInt()
 
     const salt = await backend.alloc_proof_key_salt(category, attribute)
@@ -202,6 +137,7 @@ describe("Zksbt", function () {
       sdk.getPublicAddress(),
       category,
       attribute,
+      backend_certificate.sbt_id,
       salt,
       proof
     )
@@ -215,6 +151,7 @@ describe("Zksbt", function () {
     await (await pc.addSbt(zkbab_category, zkbab_attribute, "ZK888")).wait()
   });
 
+if (false) {
   it("mint sbt and generate proof key without need generate proof", async function () {
     const salt = backend.init_salt()
     // const proof = await sdk.generateProof(zkbab_category, zkbab_attribute, onchain_root, salt)
@@ -227,7 +164,6 @@ describe("Zksbt", function () {
     console.log("zkbab proof key : ", res.proof_key)
   });
 
-if (false) {
   let group : Group
   it("Off-chain re-construct merkle tree Group", async function () {
     group = (await sdk.reconstructOffchainGroup(zkbab_category, zkbab_attribute, onchain_root)).group

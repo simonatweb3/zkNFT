@@ -27,7 +27,7 @@ export function claim_msg(
   attribute : string
 ) {
   let SBT_CLAIM_MSG = ZKSBT_CLAIM_MSG
-  SBT_CLAIM_MSG += " identity " + publicAddress.toString()
+  SBT_CLAIM_MSG += " public address " + publicAddress.toString()
   SBT_CLAIM_MSG += " sbt category " + category.toString()
   SBT_CLAIM_MSG += " sbt attribute " + attribute.toString()
   //console.log("sbt.claim_message : ", SBT_CLAIM_MSG)
@@ -38,9 +38,13 @@ export function certi_msg(
   publicAddress : string,
   category : bigint,
   attribute : string,
-  id : bigint
+  id : bigint,
+  verifyTimestamp : bigint,
 ) {
-  const SBT_CERTI_MSG = claim_msg(publicAddress, category, attribute) + " sbt id " + id.toString()
+  const SBT_CERTI_MSG =
+    claim_msg(publicAddress, category, attribute) +
+    " sbt id " + id.toString()
+    + " verify timestamp " + verifyTimestamp.toString()
   //console.log("SBT_CERTI_MSG : ", SBT_CERTI_MSG)
   return SBT_CERTI_MSG
 }

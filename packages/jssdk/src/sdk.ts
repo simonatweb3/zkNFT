@@ -21,7 +21,7 @@ interface eventSbtMinted {
 interface IZKSbt {
   getPublicAddress : () => bigint;
   claimSbtSignature : (category : bigint, attribute : string) => Promise<string>;
-  mint : (category : bigint, attribute : string, id : bigint, sig : string) => Promise<void>;
+  mint : (category : bigint, attribute : string, id : bigint, verifyTimestamp:bigint, sig : string) => Promise<void>;
   generateProof : (category : bigint, attribute : string, root : bigint, salt : bigint) => Promise<Proof>;
 }
 
@@ -96,13 +96,19 @@ export class ZKSbtSDK implements IZKSbt {
     category : bigint,
     attribute : string,
     id : bigint,
+    verifyTimestamp : bigint,
     sig : string
   ) {
       return await (await this.pc.mint(
-        [this.identity.getCommitment()],
-        [category],
-        [attribute],
-        [id],
+        [
+          {
+            category: category,
+            attribute: attribute,
+            publicAddress: this.identity.getCommitment(),
+            id: id,
+            verifyTimestamp: verifyTimestamp
+          }
+        ],
         [sig],
         {gasLimit : 20000000})
       ).wait()
@@ -112,15 +118,21 @@ export class ZKSbtSDK implements IZKSbt {
     category : bigint,
     attribute : string,
     id : bigint,
+    verifyTimestamp : bigint,
     sig : string
   ) {
       return await this.pc.estimateGas.mint(
-        [this.identity.getCommitment()],
-        [category],
-        [attribute],
-        [id],
+        [
+          {
+            category: category,
+            attribute: attribute,
+            publicAddress: this.identity.getCommitment(),
+            id: id,
+            verifyTimestamp: verifyTimestamp
+          }
+        ],
         [sig],
-        {gasLimit : 20000000}
+        {gasLimit : 30000000}
       )
   }
 
@@ -228,34 +240,11 @@ export class ZKSbtSDK implements IZKSbt {
 
   // zkSBT List
   public async querySbt(
-    category : bigint,
-    attribute : string,
+    sbtId : bigint
   ) {
     // TODO : check SbtMinted event
-    const id = await this.pc.sbt_minted(category, attribute, this.identity.getCommitment())
-    return id
-  }
-
-  public async querySbts() {
-    const sbt_list: {
-      category : bigint,
-      attribute : string,
-      id : bigint
-    }[] = []
-    for(const c in Object.values(SBT_CATEGORY)) {  // TODO : fix
-      for(const range in Object.values(POMP_RANGE)) {
-        console.log(" c : ", c, "  range : ", range)
-        const sbt_id = await this.querySbt(BigInt(c), range)
-        if (sbt_id > 0) {
-          sbt_list.push({
-            category : BigInt(c),
-            attribute : range,
-            id : sbt_id
-          })
-        }
-      }
-    }
-    return sbt_list
+    const sbtInfo = await this.pc.sbt_minted(sbtId)
+    return sbtInfo
   }
 
 }
