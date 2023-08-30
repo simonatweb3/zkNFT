@@ -13,7 +13,7 @@ declare type PublicSignals = {
     externalNullifier: BigNumberish;
 };
 
-declare type FullProof = {
+export declare type IdentityFullProof = {
   proof: Proof;
   publicSignals: PublicSignals;
 };
@@ -49,7 +49,7 @@ export async function generateIdentityProof(
   externalNullifier: bigint,
   wasmFile : string,
   zkeyFile : string
-): Promise<FullProof> {
+): Promise<IdentityFullProof> {
   console.log(new Date().toUTCString() + " generateProof for wasm : ", wasmFile, ", zkey : ", zkeyFile)
 
   const { proof, publicSignals } = await snarkjs.groth16.fullProve(

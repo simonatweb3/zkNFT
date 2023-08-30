@@ -69,6 +69,8 @@ describe("Zksbt", function () {
       owner,
       resolve(P0X_DIR, "./wasm/zksbt.wasm"),
       resolve(P0X_DIR, "./zkey/zksbt.zkey"),
+      resolve(P0X_DIR, "./wasm/identity.wasm"),
+      resolve(P0X_DIR, "./zkey/identity.zkey"),
     );
   });
 
@@ -139,7 +141,8 @@ describe("Zksbt", function () {
       attribute,
       backend_certificate.sbt_id,
       salt,
-      proof
+      BigInt(proof.publicSignals.nullifierHash),
+      proof.proof
     )
     console.log("pomp proof_key : ", proof_key)
   });

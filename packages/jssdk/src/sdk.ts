@@ -9,7 +9,7 @@ import zksbtJson from "./ABI/Zksbt.json"
 import { generateProof } from "./proof"
 import { FileType, ZKSBT_KEY_SIGN_MESSAGE, TREE_DEPTH, claim_msg, SBT_CATEGORY, POMP_RANGE, ZKSBT_CONTRACT_ADDR } from "./common"
 import bigInt from 'big-integer';
-import { generateIdentityProof } from "./identity_proof"
+import { generateIdentityProof, IdentityFullProof } from "./identity_proof"
 
 interface eventSbtMinted {
   identity: BigNumber;
@@ -22,7 +22,7 @@ interface IZKSbt {
   getPublicAddress : () => bigint;
   claimSbtSignature : (category : bigint, attribute : string) => Promise<string>;
   mint : (category : bigint, attribute : string, id : bigint, verifyTimestamp:bigint, sig : string) => Promise<void>;
-  generateProof : (category : bigint, attribute : string, root : bigint, salt : bigint) => Promise<Proof>;
+  generateProof : (category : bigint, attribute : string, root : bigint, salt : bigint) => Promise<IdentityFullProof>;
 }
 
 export class ZKSbtSDK implements IZKSbt {
@@ -139,14 +139,14 @@ export class ZKSbtSDK implements IZKSbt {
 
   public async generateProof(
     salt : bigint
-  ) : Promise<Proof> {
+  ) : Promise<IdentityFullProof> {
     const proof =  await generateIdentityProof(
       this.identity,
       salt,
       this.identity_wasm,
       this.identity_zkey
     )
-    return proof.proof
+    return proof
   }
 
   public async generateInGroupProof(

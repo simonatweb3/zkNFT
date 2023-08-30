@@ -3,32 +3,41 @@ import {Proof } from "@semaphore-protocol/proof"
 import { certi_msg, claim_msg, FileType } from "./common";
 import zksbtJson from "./ABI/Zksbt.json"
 
+import * as fs from "fs";
+const snarkjs = require('snarkjs');
+import { unpackProof } from "./proof";
+import { exit } from "process";
+
 interface IBackend {
   checkEligible : (privateAddress : string, category : bigint, attribute : string) => boolean;
   certificate : (publicAddress: bigint, category : bigint, attribute : string, sig : string) => 
     Promise<{ eligible: boolean; signature: string; sbt_id: bigint; }>
   mint : (publicAddress: bigint, category : bigint, attribute : string, sig : string) => 
     Promise<{ eligible: boolean; sbt_id: bigint; }>
-  generateProofKey : (publicAddress : bigint, category : bigint, attribute : string, sbtId : bigint, salt : bigint, proof : Proof) => Promise<string>;
-  mintAndGetProofKey : (publicAddress: bigint, category : bigint, attribute : string, sig : string) =>
-    Promise<{ eligible: boolean; sbt_id: bigint; proof_key : string }>
+  generateProofKey : (publicAddress : bigint, category : bigint, attribute : string, sbtId : bigint, salt : bigint, nullifierHash : bigint, proof : Proof) => Promise<string>;
 }
 export class Backend implements IBackend {
   pc: Contract;
   signer: Signer;
   zksbt_wasm: FileType;
   zksbt_zkey: FileType;
+  identity_wasm: FileType;
+  identity_zkey: FileType;
 
   constructor(
     zksbtContract: string,
     signer : Signer,
     zksbt_wasm: FileType,
     zksbt_zkey: FileType,
+    identity_wasm: FileType,
+    identity_zkey: FileType,
   ) {
     this.signer = signer
     this.pc = new ethers.Contract(zksbtContract, zksbtJson.abi, signer);
     this.zksbt_wasm = zksbt_wasm;
     this.zksbt_zkey = zksbt_zkey
+    this.identity_wasm = identity_wasm;
+    this.identity_zkey = identity_zkey
   }
 
   public checkEligible(
@@ -136,12 +145,33 @@ export class Backend implements IBackend {
     attribute : string,
     sbtId : bigint,
     salt : bigint,
+    nullifierHash : bigint,
     proof : Proof
-    //root : bigint
   ) : Promise<string> {
-    // TODO : verify proof
+    // off-chain verify proof
+    const zkey_final = {
+      type : "mem",
+      data : new Uint8Array(Buffer.from(fs.readFileSync(this.identity_zkey)))
+    }
+    const vKey = await snarkjs.zKey.exportVerificationKey(zkey_final);
+    const valid = await snarkjs.groth16.verify(
+        vKey,
+        [
+            publicAddress,
+            nullifierHash,
+            salt
+        ],
+        unpackProof(proof)
+    )
+
+    //assert(valid == true, "invalid proof")
+    if(valid != true) {
+      console.log("********************invalid proof********************!")
+      exit(-1)
+    }
 
 
+    // binding proof key
     const bytesData = ethers.utils.defaultAbiCoder.encode(
       ["uint256[8]", "uint256", "uint64", "string", "uint128", "uint256"],
       [proof, publicAddress, category, attribute, sbtId, salt]
@@ -152,27 +182,6 @@ export class Backend implements IBackend {
 
   public init_salt() {
     return BigInt(1234)
-  }
-
-  public async mintAndGetProofKey(
-    publicAddress: bigint,
-    category : bigint,
-    attribute : string,
-    sig : string
-  ) : Promise<{ eligible: boolean; sbt_id: bigint; proof_key : string }> {
-    const mint_ret = await this.mint(
-      publicAddress, category, attribute, sig
-    )
-    const proof : Proof = [
-      BigInt(0), BigInt(0), BigInt(0), BigInt(0),
-      BigInt(0), BigInt(0), BigInt(0), BigInt(0)
-    ]
-    const proof_key = await this.generateProofKey(publicAddress, category, attribute, mint_ret.sbt_id, this.init_salt(), proof)
-    return {
-      eligible : mint_ret.eligible,
-      sbt_id : mint_ret.sbt_id,
-      proof_key : proof_key
-    }
   }
 
 }
