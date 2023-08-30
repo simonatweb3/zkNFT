@@ -1,48 +1,48 @@
 {
   "manifestVersion": "3.2",
   "admin": {
-    "address": "0x411552Be51fe8CCBcDF00B8B8A8C0Ed1f4B55d2F",
-    "txHash": "0xc934317dbb32522844ac082dcb3fa8c2e17276cde1c94654b0facdc9bdfa9727"
+    "address": "0x0D4bE4523bCF0F1a81a653741858687a2a03228e",
+    "txHash": "0xd42de2d8cd2025ff7b71a5206abd1d5dd4184669c9177412c78f02851b7a3eef"
   },
   "proxies": [
     {
-      "address": "0x099A0eE4878FAD06Db6c13Cc5bc0269A0b84a17D",
-      "txHash": "0x784f8b90ea0b5b8ac48d94b8d49f5aa8f95d9dfbaf6bdb0e51f4810e5e425fa1",
+      "address": "0xeDfC71FbBc46B1fb2262B5258aa5E99D814E588A",
+      "txHash": "0xa80f92df702cd891d7a79dd1092882430c27253721a4bc2b18b12e6c30347d2c",
       "kind": "transparent"
     },
     {
-      "address": "0x45bC560Ee94a39833f81EEA478015F2374574Af7",
-      "txHash": "0xaf95a5cc23199e7e138f82eb66d408f229c68c05be700fad0affe9ed086a131d",
+      "address": "0xabd227d6b85EC06cBFad29e96f5aE2eA1e046eB1",
+      "txHash": "0x142d2b92002732251e64f96dad02f36b04b3de9e9d0ff46cacb5d9f6808c5814",
       "kind": "transparent"
     },
     {
-      "address": "0x44513929210443BA29Dc99F2dB758Dd251Dd9D96",
-      "txHash": "0x4aaac37926702b719b82030dfa628e77935d92db597034d0f5c6dfc9cac532d0",
+      "address": "0xFEe052821D8eFbE20a396695533Fb5B46765edA5",
+      "txHash": "0xc2be3448125919d5c024321a8dd22b0a228e6e94fe99d95d3b36c101e035ae48",
       "kind": "transparent"
     }
   ],
   "impls": {
-    "e4c3073d4ba753dcac5460851d1bd8e4e8cc0d806f944e37aa586223ba334190": {
-      "address": "0xD9C9167D02a0E1c941b0dF805F821402FE52a63f",
-      "txHash": "0x76d5ffa690bd251851e7671e7bbb8e704ab46e9117a290cf69da3256cc16ebb1",
+    "376434421729fe8851712615db2a83fa7fe808d95b59e689e37eba1e3a8e8d94": {
+      "address": "0xfE9063e877b549793A4ff5961De182D0248567CF",
+      "txHash": "0x927e80742f51c3e8de8d42660da220df2441a655d60a05da772402bc1c42fd74",
       "layout": {
         "solcVersion": "0.8.18",
         "storage": [],
         "types": {}
       }
     },
-    "e7cee7599dca1e0b60fa91557ec002b2ae955602f2dc9bcf93e4727ce2ccc19e": {
-      "address": "0xFc18c0AC967c953432423b9f9Ccb4043478cdb51",
-      "txHash": "0x86d4fe20c3daf30892509d4963c799cc3975884f038b8a328006bbeb5ce0fe71",
+    "6b5f13032be21ee20b515fe3739b7a6f0bac87066208d2f9b59af6d72bdf96e3": {
+      "address": "0x685a1cA947504fC6FF4d1eA3F0906e01db5a35Fe",
+      "txHash": "0x04bac021b6df9de3155d62ad2fee6983f574b1eccc8aafa78bfad9b8c6c15794",
       "layout": {
         "solcVersion": "0.8.18",
         "storage": [],
         "types": {}
       }
     },
-    "62dd4bb2b1e455b13383557b6c74eb59ab154a74967410de4c846bab5727be11": {
-      "address": "0x2B072a2738F21Cab54B78978Bc8D307177264F43",
-      "txHash": "0x4a882786072f1b27837b0f616787aa628d70a7d6f69e3746651ce41056c9a64d",
+    "f55ca1c1ae0a225ea9da96db45a4d49d0723be7df8ff54f796c7dde2efcc909b": {
+      "address": "0xdfEf39Ef7347e0724C9BbD578E7F35406176B74B",
+      "txHash": "0xf4a15193da55e70f211c9a3725c8a7635e90d7e6c9bb3018493e6b232194b734",
       "layout": {
         "solcVersion": "0.8.4",
         "storage": [
@@ -80,20 +80,20 @@
             "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:68"
           },
           {
-            "label": "verifiers",
+            "label": "verifier",
             "offset": 0,
             "slot": "2",
-            "type": "t_mapping(t_uint256,t_contract(IVerifier)3208)",
+            "type": "t_contract(IVerifier)3210",
             "contract": "Zksbt",
-            "src": "contracts/zksbt.sol:37"
+            "src": "contracts/zksbt.sol:44"
           },
           {
             "label": "identityVerifier",
             "offset": 0,
             "slot": "3",
-            "type": "t_contract(IVerifier)3208",
+            "type": "t_contract(IVerifier)3210",
             "contract": "Zksbt",
-            "src": "contracts/zksbt.sol:38"
+            "src": "contracts/zksbt.sol:45"
           },
           {
             "label": "latestStartGroupId",
@@ -101,47 +101,47 @@
             "slot": "4",
             "type": "t_uint256",
             "contract": "Zksbt",
-            "src": "contracts/zksbt.sol:40"
-          },
-          {
-            "label": "groupIdOffset",
-            "offset": 0,
-            "slot": "5",
-            "type": "t_uint256",
-            "contract": "Zksbt",
-            "src": "contracts/zksbt.sol:41"
+            "src": "contracts/zksbt.sol:47"
           },
           {
             "label": "iSbt",
             "offset": 0,
-            "slot": "6",
+            "slot": "5",
             "type": "t_contract(SbtInterface)3064",
-            "contract": "Zksbt",
-            "src": "contracts/zksbt.sol:42"
-          },
-          {
-            "label": "pools",
-            "offset": 0,
-            "slot": "7",
-            "type": "t_mapping(t_uint256,t_mapping(t_string_memory_ptr,t_struct(Pool)3223_storage))",
-            "contract": "Zksbt",
-            "src": "contracts/zksbt.sol:45"
-          },
-          {
-            "label": "sbt_minted",
-            "offset": 0,
-            "slot": "8",
-            "type": "t_mapping(t_uint256,t_mapping(t_string_memory_ptr,t_mapping(t_uint256,t_uint256)))",
             "contract": "Zksbt",
             "src": "contracts/zksbt.sol:48"
           },
           {
+            "label": "pools",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_mapping(t_uint256,t_struct(Pool)3221_storage)",
+            "contract": "Zksbt",
+            "src": "contracts/zksbt.sol:51"
+          },
+          {
+            "label": "sbt_minted",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_mapping(t_uint256,t_struct(SbtInfo)3232_storage)",
+            "contract": "Zksbt",
+            "src": "contracts/zksbt.sol:53"
+          },
+          {
             "label": "sbt_group",
             "offset": 0,
-            "slot": "9",
-            "type": "t_mapping(t_uint256,t_mapping(t_string_memory_ptr,t_mapping(t_uint256,t_uint256)))",
+            "slot": "8",
+            "type": "t_mapping(t_uint256,t_uint256)",
             "contract": "Zksbt",
-            "src": "contracts/zksbt.sol:52"
+            "src": "contracts/zksbt.sol:54"
+          },
+          {
+            "label": "identity_salt",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "contract": "Zksbt",
+            "src": "contracts/zksbt.sol:57"
           }
         ],
         "types": {
@@ -157,7 +157,7 @@
             "label": "bool",
             "numberOfBytes": "1"
           },
-          "t_contract(IVerifier)3208": {
+          "t_contract(IVerifier)3210": {
             "label": "contract IVerifier",
             "numberOfBytes": "20"
           },
@@ -165,40 +165,24 @@
             "label": "contract SbtInterface",
             "numberOfBytes": "20"
           },
-          "t_mapping(t_string_memory_ptr,t_mapping(t_uint256,t_uint256))": {
-            "label": "mapping(string => mapping(uint256 => uint256))",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_string_memory_ptr,t_struct(Pool)3223_storage)": {
-            "label": "mapping(string => struct Pool)",
-            "numberOfBytes": "32"
-          },
           "t_mapping(t_uint256,t_array(t_uint256)2_storage)": {
             "label": "mapping(uint256 => uint256[2])",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_uint256,t_contract(IVerifier)3208)": {
-            "label": "mapping(uint256 => contract IVerifier)",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_uint256,t_mapping(t_string_memory_ptr,t_mapping(t_uint256,t_uint256)))": {
-            "label": "mapping(uint256 => mapping(string => mapping(uint256 => uint256)))",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_uint256,t_mapping(t_string_memory_ptr,t_struct(Pool)3223_storage))": {
-            "label": "mapping(uint256 => mapping(string => struct Pool))",
             "numberOfBytes": "32"
           },
           "t_mapping(t_uint256,t_struct(IncrementalTreeData)2540_storage)": {
             "label": "mapping(uint256 => struct IncrementalTreeData)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_uint256)": {
-            "label": "mapping(uint256 => uint256)",
+          "t_mapping(t_uint256,t_struct(Pool)3221_storage)": {
+            "label": "mapping(uint256 => struct Pool)",
             "numberOfBytes": "32"
           },
-          "t_string_memory_ptr": {
-            "label": "string",
+          "t_mapping(t_uint256,t_struct(SbtInfo)3232_storage)": {
+            "label": "mapping(uint256 => struct SbtInfo)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)",
             "numberOfBytes": "32"
           },
           "t_string_storage": {
@@ -241,7 +225,7 @@
             ],
             "numberOfBytes": "160"
           },
-          "t_struct(Pool)3223_storage": {
+          "t_struct(Pool)3221_storage": {
             "label": "struct Pool",
             "members": [
               {
@@ -263,291 +247,55 @@
                 "slot": "2"
               },
               {
-                "label": "salt",
-                "type": "t_uint256",
-                "offset": 0,
-                "slot": "3"
-              },
-              {
                 "label": "amount",
                 "type": "t_uint256",
                 "offset": 0,
-                "slot": "4"
+                "slot": "3"
               },
               {
                 "label": "category",
                 "type": "t_uint256",
-                "offset": 0,
-                "slot": "5"
-              },
-              {
-                "label": "attribute",
-                "type": "t_string_storage",
-                "offset": 0,
-                "slot": "6"
-              }
-            ],
-            "numberOfBytes": "224"
-          },
-          "t_uint256": {
-            "label": "uint256",
-            "numberOfBytes": "32"
-          },
-          "t_uint8": {
-            "label": "uint8",
-            "numberOfBytes": "1"
-          }
-        }
-      }
-    },
-    "6bf459f06f11d4feebe52340f7c74a9d8ce731030324df398568ccebf67b7606": {
-      "address": "0xe9BCDcD4688CB5EEDd843AEd03bb506dF0da6eC5",
-      "txHash": "0x20bbdd6cf274935806b3789f2c043f55430e3f7a2a2341b9677ffb98eca0e7ff",
-      "layout": {
-        "solcVersion": "0.8.4",
-        "storage": [
-          {
-            "label": "merkleTrees",
-            "offset": 0,
-            "slot": "0",
-            "type": "t_mapping(t_uint256,t_struct(IncrementalTreeData)2540_storage)",
-            "contract": "SemaphoreGroups",
-            "src": "@semaphore-protocol/contracts/base/SemaphoreGroups.sol:15"
-          },
-          {
-            "label": "_owner",
-            "offset": 0,
-            "slot": "1",
-            "type": "t_address",
-            "contract": "Ownable",
-            "src": "contracts/upgradeableLib/Ownable.sol:21"
-          },
-          {
-            "label": "_initialized",
-            "offset": 20,
-            "slot": "1",
-            "type": "t_uint8",
-            "contract": "Initializable",
-            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:63",
-            "retypedFrom": "bool"
-          },
-          {
-            "label": "_initializing",
-            "offset": 21,
-            "slot": "1",
-            "type": "t_bool",
-            "contract": "Initializable",
-            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:68"
-          },
-          {
-            "label": "verifiers",
-            "offset": 0,
-            "slot": "2",
-            "type": "t_mapping(t_uint256,t_contract(IVerifier)3208)",
-            "contract": "Zksbt",
-            "src": "contracts/zksbt.sol:37"
-          },
-          {
-            "label": "identityVerifier",
-            "offset": 0,
-            "slot": "3",
-            "type": "t_contract(IVerifier)3208",
-            "contract": "Zksbt",
-            "src": "contracts/zksbt.sol:38"
-          },
-          {
-            "label": "latestStartGroupId",
-            "offset": 0,
-            "slot": "4",
-            "type": "t_uint256",
-            "contract": "Zksbt",
-            "src": "contracts/zksbt.sol:40"
-          },
-          {
-            "label": "groupIdOffset",
-            "offset": 0,
-            "slot": "5",
-            "type": "t_uint256",
-            "contract": "Zksbt",
-            "src": "contracts/zksbt.sol:41"
-          },
-          {
-            "label": "iSbt",
-            "offset": 0,
-            "slot": "6",
-            "type": "t_contract(SbtInterface)3064",
-            "contract": "Zksbt",
-            "src": "contracts/zksbt.sol:42"
-          },
-          {
-            "label": "pools",
-            "offset": 0,
-            "slot": "7",
-            "type": "t_mapping(t_uint256,t_mapping(t_string_memory_ptr,t_struct(Pool)3223_storage))",
-            "contract": "Zksbt",
-            "src": "contracts/zksbt.sol:45"
-          },
-          {
-            "label": "sbt_minted",
-            "offset": 0,
-            "slot": "8",
-            "type": "t_mapping(t_uint256,t_mapping(t_string_memory_ptr,t_mapping(t_uint256,t_uint256)))",
-            "contract": "Zksbt",
-            "src": "contracts/zksbt.sol:48"
-          },
-          {
-            "label": "sbt_group",
-            "offset": 0,
-            "slot": "9",
-            "type": "t_mapping(t_uint256,t_mapping(t_string_memory_ptr,t_mapping(t_uint256,t_uint256)))",
-            "contract": "Zksbt",
-            "src": "contracts/zksbt.sol:52"
-          }
-        ],
-        "types": {
-          "t_address": {
-            "label": "address",
-            "numberOfBytes": "20"
-          },
-          "t_array(t_uint256)2_storage": {
-            "label": "uint256[2]",
-            "numberOfBytes": "64"
-          },
-          "t_bool": {
-            "label": "bool",
-            "numberOfBytes": "1"
-          },
-          "t_contract(IVerifier)3208": {
-            "label": "contract IVerifier",
-            "numberOfBytes": "20"
-          },
-          "t_contract(SbtInterface)3064": {
-            "label": "contract SbtInterface",
-            "numberOfBytes": "20"
-          },
-          "t_mapping(t_string_memory_ptr,t_mapping(t_uint256,t_uint256))": {
-            "label": "mapping(string => mapping(uint256 => uint256))",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_string_memory_ptr,t_struct(Pool)3223_storage)": {
-            "label": "mapping(string => struct Pool)",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_uint256,t_array(t_uint256)2_storage)": {
-            "label": "mapping(uint256 => uint256[2])",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_uint256,t_contract(IVerifier)3208)": {
-            "label": "mapping(uint256 => contract IVerifier)",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_uint256,t_mapping(t_string_memory_ptr,t_mapping(t_uint256,t_uint256)))": {
-            "label": "mapping(uint256 => mapping(string => mapping(uint256 => uint256)))",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_uint256,t_mapping(t_string_memory_ptr,t_struct(Pool)3223_storage))": {
-            "label": "mapping(uint256 => mapping(string => struct Pool))",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_uint256,t_struct(IncrementalTreeData)2540_storage)": {
-            "label": "mapping(uint256 => struct IncrementalTreeData)",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_uint256,t_uint256)": {
-            "label": "mapping(uint256 => uint256)",
-            "numberOfBytes": "32"
-          },
-          "t_string_memory_ptr": {
-            "label": "string",
-            "numberOfBytes": "32"
-          },
-          "t_string_storage": {
-            "label": "string",
-            "numberOfBytes": "32"
-          },
-          "t_struct(IncrementalTreeData)2540_storage": {
-            "label": "struct IncrementalTreeData",
-            "members": [
-              {
-                "label": "depth",
-                "type": "t_uint256",
-                "offset": 0,
-                "slot": "0"
-              },
-              {
-                "label": "root",
-                "type": "t_uint256",
-                "offset": 0,
-                "slot": "1"
-              },
-              {
-                "label": "numberOfLeaves",
-                "type": "t_uint256",
-                "offset": 0,
-                "slot": "2"
-              },
-              {
-                "label": "zeroes",
-                "type": "t_mapping(t_uint256,t_uint256)",
-                "offset": 0,
-                "slot": "3"
-              },
-              {
-                "label": "lastSubtrees",
-                "type": "t_mapping(t_uint256,t_array(t_uint256)2_storage)",
                 "offset": 0,
                 "slot": "4"
               }
             ],
             "numberOfBytes": "160"
           },
-          "t_struct(Pool)3223_storage": {
-            "label": "struct Pool",
+          "t_struct(SbtInfo)3232_storage": {
+            "label": "struct SbtInfo",
             "members": [
               {
-                "label": "id",
+                "label": "category",
                 "type": "t_uint256",
                 "offset": 0,
                 "slot": "0"
               },
               {
-                "label": "name",
+                "label": "attribute",
                 "type": "t_string_storage",
                 "offset": 0,
                 "slot": "1"
               },
               {
-                "label": "depth",
+                "label": "publicAddress",
                 "type": "t_uint256",
                 "offset": 0,
                 "slot": "2"
               },
               {
-                "label": "salt",
+                "label": "id",
                 "type": "t_uint256",
                 "offset": 0,
                 "slot": "3"
               },
               {
-                "label": "amount",
+                "label": "verifyTimestamp",
                 "type": "t_uint256",
                 "offset": 0,
                 "slot": "4"
-              },
-              {
-                "label": "category",
-                "type": "t_uint256",
-                "offset": 0,
-                "slot": "5"
-              },
-              {
-                "label": "attribute",
-                "type": "t_string_storage",
-                "offset": 0,
-                "slot": "6"
               }
             ],
-            "numberOfBytes": "224"
+            "numberOfBytes": "160"
           },
           "t_uint256": {
             "label": "uint256",
