@@ -50,7 +50,7 @@ export class ZKSbtSDK implements IZKSbt {
     zksbtContract: string = ZKSBT_CONTRACT_ADDR,
     zksbt_wasm: FileType = "https://p0x-labs.s3.amazonaws.com/zksbt/wasm/zksbt.wasm",
     zksbt_zkey: FileType = "https://p0x-labs.s3.amazonaws.com/zksbt/zkey/zksbt.zkey",
-    identity_wasm: FileType = "https://p0x-labs.s3.amazonaws.com/zksbt/wasm/zksbt.wasm",
+    identity_wasm: FileType = "https://p0x-labs.s3.amazonaws.com/zksbt/wasm/identity.wasm",
     identity_zkey: FileType = "https://p0x-labs.s3.amazonaws.com/zksbt/zkey/identity.zkey"
   ): Promise<ZKSbtSDK> => {
     const identity = ZKSbtSDK.generateIdentity(JSON.stringify(await ZKSbtSDK.generateAccountPrivKeys(signer)))
