@@ -43,12 +43,12 @@
 ```shell
     cd packages/contracts;
     cp testnet.env .env
-    yarn deploy --network manta;
+    yarn deploy --netwowrk xxx
 ```
 
 5. Contract Upgrade
 ```shell
-    yarn upgrade --network manta
+    yarn upgrade --network xxx
 ```
 
 
